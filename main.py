@@ -14,6 +14,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
 DISCORD_TOKEN = os.environ['DISCORD_TOKEN']
+GOOGLE_SHEETS_ID = os.environ['GOOGLE_SHEETS_KEY']
 handler = logging.FileHandler(filename='discord.log',
                               encoding='utf-8',
                               mode='w')
@@ -52,16 +53,16 @@ async def on_message(message):
     if message.attachments:
       for attachment in message.attachments:
         if attachment.filename.endswith(('.png', '.jpg', 'jpeg', 'gif')):
-          
+
           image_url = attachment.url
-          
+
           # posting to google sheets
           await post_image(message, image_url)
-          
+
           # posting to submission channel
           await message.channel.send('SUBMISSION RECEIVED')
           num_submissions += 1
-          
+
           # posting for logs/status
           await submission_alert(message)
 
@@ -76,9 +77,23 @@ async def on_message(message):
 
 # function to post image to google sheets
 async def post_image(message, image_url):
-  # download the image
-  for attachment in message.attachments:
-    image = message.attachments.save(attachment.filename)
+
+  CREDENTIALS_PATH = '/google_creds.json'
+  SCOPE = 'https://www.googleapis.com/auth/spreadsheets'
+  SHEET_NAME = 'Bingo Approval Form'
+  # print('in post_image method')
+
+  # connect to google sheets
+  credentials = ServiceAccountCredentials.from_json_keyfile_name(
+      CREDENTIALS_PATH, SCOPE)
+  gc = gspread.authorize(credentials)
+  sheet = gc.open_by_key(GOOGLE_SHEETS_ID).sheet1
+  print('connected to google sheets')
+
+  # post image
+  #next_row = len(sheet.get_all_values()) + 1
+  #sheet.update_cell(next_row, 1, image_url)
+  #sheet.update_cell(next_row, 2, message.author)
 
 
 async def submission_alert(message):
