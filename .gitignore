@@ -2,3 +2,6 @@ discord.log
 .replit
 .env
 service_account.json
+poetry.lock
+pyproject.toml
+README.md
