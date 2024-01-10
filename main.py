@@ -52,12 +52,20 @@ async def on_message(message):
     if message.attachments:
       for attachment in message.attachments:
         if attachment.filename.endswith(('.png', '.jpg', 'jpeg', 'gif')):
+          
           image_url = attachment.url
+          
+          # posting to google sheets
           await post_image(message, image_url)
+          
+          # posting to submission channel
           await message.channel.send('SUBMISSION RECEIVED')
           num_submissions += 1
+          
+          # posting for logs/status
           await submission_alert(message)
-    
+
+    # no attachment on message
     else:
       await message.channel.send('NO FILE ATTACHED. SUBMISSION REJECTED.')
       return
@@ -68,12 +76,22 @@ async def on_message(message):
 
 # function to post image to google sheets
 async def post_image(message, image_url):
-  pass
+  # download the image
+  for attachment in message.attachments:
+    image = message.attachments.save(attachment.filename)
+
 
 async def submission_alert(message):
   d = datetime.datetime.now()
   channel = client.get_channel(SUBMISSIONS_CHANNEL)
-  await message.channel.send('message')
+  embed = discord.Embed(title=f'Submission #{num_submissions}',
+                        url=message.jump_url,
+                        color=0x0a0aab)
+  embed.set_author(name=message.author, icon_url=message.author.avatar)
+  embed.set_thumbnail(url=message.attachments[0].url)
+  embed.add_field(name='Posted on: ', value=d.strftime('%B %d %X'))
+  await channel.send(embed=embed)
+
 
 # run the bot
 client.run(DISCORD_TOKEN, log_handler=handler, log_level=logging.DEBUG)
