@@ -1,7 +1,10 @@
 import discord
+import discord.ext.commands
+import random
 import logging
 import datetime
 import os
+import gspread
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,30 +16,35 @@ import uuid
 # AUTH
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GOOGLE_DOCS_KEY = os.getenv("GOOGLE_DOCS_KEY")
-# TEST CHANNELS
+# TEST CHANNELS & WEBHOOKS
 TEST_SUBMISSIONS_CHANNEL = 1194832130962890842
 TEST_LOGS_CHANNEL = 1194488938480537740
 TEST_WEBHOOK_USER_ID = 1194889597738549298
-# LIVE CHANNELS
+# LIVE CHANNELS & WEBHOOKS
 BINGO_GENERAL_CHANNEL = 1193039460980502578
-# DISCORD TEAM ROLE IDS: NAMES
+# BINGO_SUBMISSIONS_CHANNEL = 
+# BINGO_WEBHOOK_USER_ID = 
+# DISCORD TEAM ROLES (IDS: NAMES)
 BINGO_ROLES = {
     1195523300277895189: "Team One",
     1195523386621825177: "Team Two",
     1195523436685049897: "Team Three",
     1195523498299371570: "Team Four",
     1195523607384834060: "Team Five",
+    # For testing
+    1195556259160666172: "Test"
 }
-# URL to Bingo Image
-EMBED_ICON_URL = "https://shorturl.at/xJQU1"
+# URLs & MESSAGES
+EMBED_ICON_URL = "https://shorturl.at/wGOXY"
+RULES_POST_URL = "https://discord.com/channels/741153043776667658/1193039460980502578/1193042254751879218"
+RULES_POST_MSG = 1193042254751879218
 
 ### VARIABLES
-# MISC
-num_submissions = 0
+# MAPS
 map_of_submissions = {}
 map_of_embeds = {}
 map_of_embed_messages = {}
-foki_responses_dict = {
+submission_responses = {
     1: "DID YOU REMEMBER YOUR CODEWORD?",
     2: "REALLY? THIS IS YOUR SUBMISSION? ARE YOU SURE?",
     3: "YOU'RE THE FIRST PERSON TO SUBMIT THIS! PROBABLY. MAYBE.",
@@ -48,6 +56,31 @@ foki_responses_dict = {
     9: "TOOK YA LONG ENOUGH!",
     10: "FUCK YOU DJ",
 }
+# Gives user profiles custom titles
+player_titles_dict = {
+    1: "Formidable",
+    2: "Green",
+    3: "Monumental",
+    4: "Smelly",
+    5: "Courageous",
+    6: "Spooned",
+    7: "Crafty",
+    8: "Humble",
+    9: "Terrible"
+}
+
+# Custom smack talk, can throw anywhere
+player_smack_talk = {
+    1: "Team Four doesn't stand a chance!",
+    2: "Are you sure Team Two is playing the right bingo?  It seems like they took a wrong turn on the way to mediocrity.",
+    3: "Team One's strategy is so outdated; it's like playing chess against a team of checkers enthusiasts.",
+    4: "I'm not sure what Team Three's problem is, but I'd be willing to be that it's something hard to pronounce.",
+    5: "Brain's aren't everything.  And in Team Five's case, they're nothing."
+}
+
+# MISC
+num_submissions = 0
+
 # DISCORD AUTH
 intents = discord.Intents.default()
 intents.message_content = True
@@ -215,7 +248,6 @@ Future testing function, pass a bunch of submissions at once
 async def test_submissions():
     pass
 
-
 """
 Figure out what bingo team the command caller is on
 message - Discord message object
@@ -223,7 +255,8 @@ BINGO_ROLES - map of message id - bingo team names (string)
 Cycle through all bingo teams, if user has role, return team name.
 """
 
-
+#@bot.command()
+# TODO: isCaptain
 async def find_bingo_team(message):
     roles = message.author.roles
 
@@ -255,18 +288,21 @@ Static Discord bot event, triggers whenever a message is sent by a user.
 # TODO: refactor code so quicker exit commands are on top
 # TODO: match team color to profile embed, or random colors
 # TODO: SAVE THE DATA!! reboot from save command?  save data manually command?
+# TODO: commands list
+# TODO: swap to bot.commands
+# TODO: add toggleable options
+# TODO: 
 @client.event
 async def on_message(message):
-    global num_submissions, map_of_submissions, client, EMBED_ICON_URL
+    global num_submissions, map_of_submissions, client, player_titles_dict
+    global EMBED_ICON_URL, RULES_POST_URL
+
+    # Tells bot to ignore its own messages
+    if message.author == client.user:
+        return
 
     # Finding out what team command caller is on
     team = await find_bingo_team(message)
-    if team == "None":
-        await message.channel.send("You are not in the bingo.  But it's not too late to sign up!")
-
-    # Tells bot to ignore its own messages
-    if message.author == "client.user":
-        return
 
     # Bot responds to messages from the Google API
     if message.content.startswith("Google"):
@@ -275,7 +311,13 @@ async def on_message(message):
 
     # Bot command trigger
     if message.content.startswith("!bingo"):
-        # Snipping command from message string
+
+        # If command caller isn't in the bingo
+        if team == "None":
+            await message.channel.send("You are not in the bingo.  But it's not too late to sign up!")
+            return
+        
+        # Slicing command from message string
         cmd = message.content[6:]
         # LOG
         process_message = await message.channel.send("Processing...")
@@ -286,10 +328,9 @@ async def on_message(message):
         # Displays information about the bingo event
         if cmd == "info":
             # Link to bingo information post on Discord
-            INFO_URL = "https://discord.com/channels/741153043776667658/1193039460980502578/1193042254751879218"
 
             bingo_info_embed = discord.Embed(
-                title=f"Battle Bingo Information", url=INFO_URL, color=0xFF0000
+                title=f"Battle Bingo Information", url=RULES_POST_URL, color=0xFF0000
             )
             bingo_info_embed.set_author(name=client.user, icon_url=client.user.avatar)
             bingo_info_embed.set_thumbnail(url=EMBED_ICON_URL)
@@ -308,31 +349,53 @@ async def on_message(message):
             bingo_info_embed.add_field(name="Team Five", value="Captain: ")
 
             await message.channel.send(embed=bingo_info_embed)
+            await process_message.delete()
+            return
 
         ### "!bingome" command
-        # Displays bingo player stats in an embed
+        # Displays custom bingo player profile card in an embed
+        # TODO: Custom embed for Captains? run through Foki
         elif cmd == "me":
-
+            title = player_titles_dict.get(random.randint(1,10))
+            insult = player_smack_talk.get(random.randint(1,5))
+            
             bingo_profile_embed = discord.Embed(
                 title=f"Battle Bingo Player Stats", color=0x0000FF
             )
-            bingo_profile_embed.set_author(name=message.author.nick, icon_url=message.author.avatar)
+            bingo_profile_embed.set_author(
+                name=f"{message.author.display_name} the {title}", icon_url=message.author.avatar
+            )
             bingo_profile_embed.set_thumbnail(url=EMBED_ICON_URL)
-            bingo_profile_embed.add_field(name="Team:", value=f"{team}")
+            bingo_profile_embed.add_field(name="Team:", value=team)
             bingo_profile_embed.add_field(name="", value="")
             bingo_profile_embed.add_field(name="Submissions:", value="0")
-        
+            bingo_profile_embed.add_field(name="", value=insult)
+
             await message.channel.send(embed=bingo_profile_embed)
+            await process_message.delete()
+            return
+
+        ### "!bingorules" command
+        # Points user in the direction of the rules post in Discord
+        elif cmd == "rules":
+            rules_channel = await client.fetch_channel(BINGO_GENERAL_CHANNEL)
+            rules_message = await rules_channel.fetch_message(RULES_POST_MSG)
+            print("have message")
+            await message.channel.send(
+                "You can find the rules for Battle Bingo here -> "
+                + rules_message
+            )
+            await process_message.delete()
+            return
 
         ### CHANNEL COMMANDS
         # Targeting #bingo-general*
         if message.channel == client.get_channel(BINGO_GENERAL_CHANNEL):
-
-            
             ### "!bingowhen" command
             # Ping pong
             if cmd == "when":
                 await message.channel.send("👀")
+                return
 
         # Targetting #bingo-submissions
         """
@@ -364,6 +427,7 @@ async def on_message(message):
 
                             # posting logs to #logs channel
                             await submission_alert(message, id)
+                            await process_message.delete()
                             return
 
                         # wrong file type
@@ -371,6 +435,7 @@ async def on_message(message):
                             await message.channel.send(
                                 "The file type you have submitted is not supported.  Please use .png, .jpg, .jpeg, or .gif."
                             )
+                            await process_message.delete()
                             return
 
                 # no attachment on message
@@ -378,6 +443,7 @@ async def on_message(message):
                     await message.channel.send(
                         "There was no attachment on that post. Your submission has been rejected."
                     )
+                    await process_message.delete()
                     return
         """
 
@@ -434,13 +500,12 @@ async def on_message(message):
         await process_message.delete()
 
 
-# runs the bot
+# Runs the bot
 client.run(DISCORD_TOKEN, log_handler=handler, log_level=logging.DEBUG)
 
 
-# IDEAS
+# FUTURE IDEAS
 
-# - rules command
-# - tiles/map command
-# - teams command
-# - completed tiles command
+# - show board command
+# - show teams command
+# - show current board state?
