@@ -349,8 +349,6 @@ async def on_message(message):
             bingo_info_embed.add_field(name="Team Five", value="Captain: ")
 
             await message.channel.send(embed=bingo_info_embed)
-            await process_message.delete()
-            return
 
         ### "!bingome" command
         # Displays custom bingo player profile card in an embed
@@ -385,8 +383,6 @@ async def on_message(message):
                 "You can find the rules for Battle Bingo here -> "
                 + rules_message
             )
-            await process_message.delete()
-            return
 
         ### CHANNEL COMMANDS
         # Targeting #bingo-general*
@@ -395,7 +391,6 @@ async def on_message(message):
             # Ping pong
             if cmd == "when":
                 await message.channel.send("👀")
-                return
 
         # Targetting #bingo-submissions
         """
@@ -427,24 +422,18 @@ async def on_message(message):
 
                             # posting logs to #logs channel
                             await submission_alert(message, id)
-                            await process_message.delete()
-                            return
 
                         # wrong file type
                         else:
                             await message.channel.send(
                                 "The file type you have submitted is not supported.  Please use .png, .jpg, .jpeg, or .gif."
                             )
-                            await process_message.delete()
-                            return
 
                 # no attachment on message
                 else:
                     await message.channel.send(
                         "There was no attachment on that post. Your submission has been rejected."
                     )
-                    await process_message.delete()
-                    return
         """
 
         # Targeting messages in Test server
@@ -474,22 +463,18 @@ async def on_message(message):
                             # await message.channel.send(submission_responses_dict[bot_response])
 
                             # posting logs to #logs channel
-                            await submission_alert(message, id)
-                            return
 
                         # wrong file type
                         else:
                             await message.channel.send(
                                 "The file type you have submitted is not supported.  Please use .png, .jpg, .jpeg, or .gif."
                             )
-                            return
 
                 # no attachment on message
                 else:
                     await message.channel.send(
                         "There was no attachment on that post. Your submission has been rejected."
                     )
-                    return
 
             # quick response action
             elif message.content.startswith("!ping"):
