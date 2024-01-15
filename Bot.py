@@ -13,6 +13,9 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import uuid
 
+from Views.Tasks import Tasks
+from Utils import *
+
 #
 # CONSTANTS
 #
@@ -23,7 +26,7 @@ GOOGLE_DOCS_KEY = os.getenv("GOOGLE_DOCS_KEY")
 # TEST CHANNELS & WEBHOOKS
 # Logic's Server
 TEST_SUBMISSIONS_CHANNEL = 1194832130962890842
-BINGO_TEST_CHANNEL = 1194488938480537740
+TEST_LOGS_CHANNEL = 1194488938480537740
 TEST_WEBHOOK_USER_ID = 1194889597738549298
 # LIVE CHANNELS & WEBHOOKS
 BINGO_GENERAL_CHANNEL = 1193039460980502578
@@ -31,12 +34,13 @@ BINGO_TEST_CHANNEL = 1195530905398284348
 # BINGO_SUBMISSIONS_CHANNEL =
 # BINGO_WEBHOOK_USER_ID =
 # DISCORD TEAM ROLES (IDS: NAMES)
+GENERAL_BINGO_ROLE = 1196183580615909446
 BINGO_TEAM_ROLES = {
-    1195523300277895189: "Terrible Trouncers",
-    1195523386621825177: "Bodacious Bouncers",
-    1195523436685049897: "Pernicious Pouncers",
-    1195523498299371570: "Amazing Announcers",
-    1195523607384834060: "Relaxing Renouncers",
+    1196180292742951003: "Bingo Team Hokumpoke",
+    1196182424913199217: "Bingo Team Seczey",
+    1196182816099152013: "Bingo Team Kyanize",
+    1196183381931720796: "Bingo Team ItsOnlyPrime",
+    1196183533308358696: "Bingo Team Five",
     # For testing
     1195556259160666172: "Test",
 }
@@ -51,11 +55,9 @@ RULES_POST_MSG = 1193042254751879218
 #
 
 # DISCORD AUTH
-intents = discord.Intents.default()
+intents = discord.Intents.all()
 intents.message_content = True
-client = discord.Client(intents=intents)
 bot = commands.Bot(command_prefix="!bingo", intents=intents)
-# client = commands.Bot(command_prefix=commands.when_mentined_or('!'))
 # TEST
 handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
 
@@ -77,274 +79,7 @@ submission_responses = {
     9: "TOOK YA LONG ENOUGH!",
     10: "FUCK YOU DJ",
 }
-# Gives user profiles custom titles
-player_titles_dict = {
-    1: "Formidable",
-    2: "Green",
-    3: "Monumental",
-    4: "Smelly",
-    5: "Courageous",
-    6: "Mean Bean",
-    7: "Crafty",
-    8: "Humble",
-    9: "Terrible",
-    10: "Vile",
-    11: "Despicable",
-    12: "Sinister",
-    13: "Malevolent",
-    14: "Nasty",
-    15: "Wretched",
-    16: "Gruesome",
-    17: "Cruel",
-    18: "Abominable",
-    19: "Diabolical",
-    20: "Fiendish",
-    21: "Wise",
-    22: "Fearless",
-    23: "Radiant",
-    24: "Agile",
-    25: "Mysterious",
-    26: "Charming",
-    27: "Dynamic",
-    28: "Tranquil",
-    29: "Bold",
-    30: "Melodious",
-    31: "Mystical",
-    32: "Daring",
-    33: "Luminous",
-    34: "Swift",
-    35: "Enigmatic",
-    36: "Charismatic",
-    37: "Spirited",
-    38: "Serene",
-    39: "Audacious",
-    40: "Harmonious",
-    41: "Sweaty",
-    42: "Fine",
-    43: "Bold",
-    44: "Snake",
-    45: "Strategic",
-    46: "Tactical",
-    47: "Agile",
-    48: "Skilled",
-    49: "Adaptable",
-    50: "Precise",
-    51: "Quick-thinking",
-    52: "Persistent",
-    53: "Competitive",
-    54: "Resourceful",
-    55: "Alert",
-    56: "Focused",
-    57: "Clever",
-    58: "Tenacious",
-    59: "Efficient",
-    60: "Coordinated",
-    61: "Versatile",
-    62: "Inventive",
-    63: "Adept",
-    64: "Intuitive",
-    65: "Spoon",
-}
 
-# Dict of bingo tasks
-task_list = {
-    1: "[5 points] Most cumulative beer brought during all task completions",
-    2: "[2 points] Receive a non-prayer scroll purple unique from Chambers of Xeric (Buckler, DHCB, Dinh's, Ancestral, Dragon Claws, Elder Maul, Kodai, Twisted Bow, Kit, Dust, Pet)",
-    3: "[3 points] Obtain an Enhanced Crystal Weapon Seed",
-    4: "[2 points] Achieve 5,000,000 Woodcutting XP AND obtain a Fox Whistle",
-    5: "[3 points] Obtain all pieces to complete a Voidwaker",
-    6: "[1 point] Obtain a Warped sceptre",
-    7: "[1 point] Achieve 125,000 xp/hr for a minimum of 60 minutes while mining",
-    8: "[1 point] Obtain a Dark Bow",
-    9: "[1 point] Obtain an Ash covered tome from Petrified Pete's Ore Shop",
-    10: "[3 points] Obtain one of three Visages (Skeletal, Wyvern, or Draconic)",
-    11: "[5 points] Last the longest, while still killing the Corrupted Hunleff (Must loot chest after)",
-    12: "[2 points] Receive a purple unique from Theatre of Blood (Avernic defender hilt, Justicar, Rapier, Sanguinesti, Scythe, Kit, Dust, Pet)",
-    13: "[1 point] Alch the purple you received (one time use)",
-    14: "[2 points] Complete Chambers solo in under 17 minutes, trio under 14:30, or any other team size under 12:30.",
-    15: "[3 points] Receive an imbued heart, dust battlestaff, mist battlestaff, or eternal gem from a Superior",
-    16: "[3 points] Obtain a drop from the Mega-rare table from a master clue",
-    17: "[2 points] Obtain an Abyssal Lantern and Abyssal Needle",
-    18: "[1 point] Obtain an Occult Necklace",
-    19: "[2 points] Obtain all of the wilderness rings",
-    20: "[2 points] Complete a Grandmaster quest",
-    21: "[5 points] Earn a Fire cape before anyone else",
-    22: "[1 point] Score a goal in gnomeball against an opposing bingo team",
-    23: "[2 points] Obtian a Revenant Weapon (Viggora's Chainmace, Craw's Bow, or Thammaron's Sceptre)",
-    24: "[2 points] Receive a good purple unique from Tombs of Amascut (Masori, Fang, Shadow, Pet)",
-    25: '[3 points] Obtain the following: Bandos Chestplate, Armadyl Chainskirt, Zamorak Spear, Armadyl Crossbow, Zaryte Vambraces. Then wear this outfit and screenshot saying "I am the God this dungeon was named after." (have other weapon in inventory while not wearing)',
-    26: "[2 points] Obtain a Slepey Tabley and any Nightmare Unique (Staff, Inquisitor, Orb, Pet, Jar, Egg)",
-    27: "[2 points] Obtain a Hydra Claw or Hydra Leather",
-    28: "[1 point] Successfully bake a Wild Pie. Ironman style. (Gather all ingredients, and successful process.)",
-    29: "[1 point] Obtain a Pharaoh's Sceptre from Pyramid Plunder",
-    30: "[2 points] Obtain a unique from Zalcano (Crystal tool seed, Zalcano shard, pet, onyx)",
-    31: '[5 points] Least deaths wins. Nominate your Champion. "PK" opposing teams while completing ToB. One point goes to the team whos member has the least deaths',
-    32: "[3 points] Achieve the highest level invocation Tombs of Amascut completion in any scale",
-    33: "[3 points] Obtain a Sigil, Jar, or Pet from Corp",
-    34: "[3 points] Obtain any vestige from one of the Desert Treasure II bosses",
-    35: "[2 points] Obtain an Eternal Glory",
-    36: "[1 point] Kill 10 different quest bosses",
-    37: "[1 point] Receive an 84,000 thieving experience drop",
-    38: "[2 points] Complete a heavy ballista",
-    39: "[1 point] Create an Amulet of Torture, Ironman style",
-    40: "[2 points] Obtain Dragon limbs",
-    41: "[5 points] Earn an Infernal cape before anyone else",
-    42: "[3 points] Achieve the most valuable Bounty Hunter PK (cannot be boosted/friends/clan/etc.)",
-    43: "[1 point] Obtain a crystal from Cerberus (Eternal, Pegasian, Primordial)",
-    44: "[2 points] Obtain a non-head unique from Vorkath (Dragonbone necklace, Jar, pet, either visage) ((asking about wrath talisman loses your team 1 point))",
-    45: "[1 point] Obtain Bryophyta's Essence",
-    46: "[2 points] Obtain a Nex Unique (Hilt, Vambs, Torva, Horn, Pet) (I will allow vambs if you already got them from the God of the Dungeon tile)",
-    47: "[1 point] Kill Giant Mole 500 times",
-    48: "[1 point] Obtain all four rings from Dagannoth Kings",
-    49: "[2 points] Purchase 10000+ sharks from minnows in a single transaction",
-    50: "[1 point] Catch a Lucky Impling",
-    51: "[5 points] Win a game of Connect-Four against another team's member",
-    52: '[3 points] Earn the title: "of a Thousand Hunts". Catch 1000 Salamanders, 1000 Chins, 1000 Implings, and 1000 Herbiboar.',
-    53: '[5 points] Have 3 people from your team earn an Infernal cape (if you got a kc during the "earn a cape before anyone else" tile, I will count that too)',
-    54: "[2 points] Obtain a fang and a visage from Zulrah",
-    55: "[1 point] Obtain a Granite thing from Grotesque Guardians (except dust)",
-    56: "[2 points] Obtain a double item chest from Barrows, or finish a full set for one brother",
-    57: "[3 points] Receive a Dragon Full Helm as a drop",
-    58: "[1 point] Obtain a Sarachnis cudgel",
-    59: "[1 point] Receive a Blood Shard as a drop (Thieving or Killing Vyrewatch)",
-    60: "[1 point] Obtain an Earth Warrior Champion's Scroll",
-    61: "[5 points] Achieve the largest XP drop out of any other team (Must show up as a single XP drop to count)",
-    62: "[3 points] Best fashionscape (Foki is judge) (Submit all screenshots anonymously from team captain with no identifiable info)",
-    63: "[3 points] Make your Torva bloody. (if you already have blood torva, screenshot new kcs.)",
-    64: "[1 point] Kill the King Black Dragon without wearing or equipping anything",
-    65: "[2 points] Kill all five God Wars bosses in a single inventory without banking or leaving the God Wars Dungeon",
-    66: "[1 point] Obtain an Abyssal Whip",
-    67: "[1 points] Obtain a master wand from the mage training arena",
-    68: "[5 points] Win a game of Castle Wars against another competing team",
-    69: "[3 points] Obtain a Dragon Warhammer",
-    70: "[3 points] Obtain full Virtus",
-    71: "[1 point] Obtain a Skotizo unique (claw, pet, onyx, Jar) ",
-    72: "[2 points] Turn Amy into a Sellout. Buy one of everything from the Mahogany Homes Reward Shop",
-    73: "[1 point] Obtain an Unsired",
-    74: "[1 point] Obtain a Trident of the seas, and a Kraken tentacle",
-    75: "[5 points] Achieve the most consecutive LMS wins. (Screenshots of each win with kc is required)",
-    76: "[1 point] Obtain a Venator Shard",
-    77: "[3 points] Complete a deathless, 5-man ToB with a maximum of 1 person from each bingo team",
-    78: "[1 point] Obtain a Kalphite Queen uniqe (Tattered head, Dragon pickaxe, pet, jar, dragon chainbody)",
-    79: "[1 point] Obtain a black mask",
-    80: "[1 point] Create a sword in Giant's Foundry with a score of 69",
-    81: "[1 point] Purchase the full Brimhaven Agility Arena Graceful recolour",
-    82: "[5 points] Most gp earned in 1 hour on a fresh lvl 3 FTP ironman - final screenshot must include time played and be less than 60 mintues",
-    83: "[3 points] Kill Duke Sucellus with the least valuable setup",
-    84: "[1 point] Complete a sled run in Goblin Village with a time of 0:50 or less",
-    85: "[1 point] Obtain a bunch of stuff from Chaos Archeologist. (Rcb, Fedora, Odium Shard, Malediction Shard)",
-    86: "[1 point] Achieve Diamond time for the Earnest the Chicken quest speedrun",
-    87: "[3 points] Equip the highest combined defense and attack bonus out of any team while on Entrana. (Will add up the two highest + bonuses)",
-    88: "[1 point] Kill the bunny in Priffdinas",
-    89: "[1 point] Obtain a full set of Chaos Druid robes",
-    90: "[1 point] Achieve a Hallowed Sepulchre (all 5 floors) time of 6:20 or better",
-    91: "[1 point] Obtain a Clue in a Bottle of every type simultaneously (all five tiers)",
-    92: "[1 point] BONUS: Get a skilling pet",
-    93: "[1 point] BONUS: Get a boss pet",
-    94: "[1 point] BONUS: Get a 99",
-    95: "[1 point] BONUS: PK over 100m to someone not in clan, not in deathmatch. Just a good ol fashioned wildy PK.",
-    96: '[1 point] BONUS: Get sasa to say "I love you"',
-}
-
-# Dict of bingo task point values
-task_points = {
-    1: 5,
-    2: 2,
-    3: 3,
-    4: 2,
-    5: 3,
-    6: 1,
-    7: 1,
-    8: 1,
-    9: 1,
-    10: 3,
-    11: 5,
-    12: 2,
-    13: 1,
-    14: 2,
-    15: 3,
-    16: 3,
-    17: 2,
-    18: 1,
-    19: 2,
-    20: 2,
-    21: 5,
-    22: 1,
-    23: 2,
-    24: 2,
-    25: 3,
-    26: 2,
-    27: 2,
-    28: 1,
-    29: 1,
-    30: 2,
-    31: 5,
-    32: 3,
-    33: 3,
-    34: 3,
-    35: 2,
-    36: 1,
-    37: 1,
-    38: 2,
-    39: 1,
-    40: 2,
-    41: 5,
-    42: 3,
-    43: 1,
-    44: 2,
-    45: 1,
-    46: 2,
-    47: 1,
-    48: 1,
-    49: 2,
-    50: 1,
-    51: 5,
-    52: 3,
-    53: 5,
-    54: 2,
-    55: 1,
-    56: 2,
-    57: 3,
-    58: 1,
-    59: 1,
-    60: 1,
-    61: 5,
-    62: 3,
-    63: 3,
-    64: 1,
-    65: 2,
-    66: 1,
-    67: 1,
-    68: 5,
-    69: 3,
-    70: 3,
-    71: 1,
-    72: 2,
-    73: 1,
-    74: 1,
-    75: 5,
-    76: 1,
-    77: 3,
-    78: 1,
-    79: 1,
-    80: 1,
-    81: 1,
-    82: 5,
-    83: 3,
-    84: 1,
-    85: 1,
-    86: 1,
-    87: 3,
-    88: 1,
-    89: 1,
-    90: 1,
-    91: 1,
-    92: 1,
-    93: 1,
-    94: 1,
-    95: 1,
-    96: 1,
-}
 
 # MISC
 
@@ -364,14 +99,15 @@ task_points = {
 # TODO: write bot start-up batch script
 # TODO: match team color to profile embed, or random colors
 # TODO: add toggleable options
+# TODO: convert all images to discord.File local images
 
 # GLOBAL COMMANDS
-
 # "!bingowhen" command
 # Ping pong
 # TESTED GOOD
 @bot.command()
 async def when(ctx):
+    print("here")
     await ctx.channel.send("👀")
     return
 
@@ -381,7 +117,7 @@ async def when(ctx):
 @bot.command()
 async def info(ctx):
     bingo_info_embed = discord.Embed(
-        title=f"Battle Bingo Information", url=RULES_POST_URL, color=0xFF0000
+        title=f"Battle Bingo Information", url=RULES_POST_URL, color=0x00FFDD
     )
     bingo_info_embed.set_author(
         name=bot.user.display_name, icon_url=bot.user.display_avatar
@@ -428,7 +164,7 @@ async def me(ctx):
         bingo_profile_embed = discord.Embed(
             title=f"Battle Bingo Player Stats",
             color=0xFFAB00,
-            description="👑 Team Captain,"
+            description="👑 Team Captain"
         )
     # Normal players
     else:
@@ -448,6 +184,7 @@ async def me(ctx):
 
     await ctx.send(embed=bingo_profile_embed)
 
+# CHANNEL SPECIFIC COMMANDS
 
 # "!bingosubmit" command
 # Tile Submition Tool
@@ -456,20 +193,18 @@ async def me(ctx):
 # TODO: IMPORTANT---Data persistance
 @bot.command()
 async def submit(ctx):
-
     # TODO: IMPORTANT---switch before going live
     # Targeting submissions in a specific channel
     # To prevent spam in rest of server
     if ctx.channel != bot.get_channel(BINGO_TEST_CHANNEL):
         return
     
-    #task_id = message.content
-    #print(task_id)
     if ctx.message.attachments:
         for attachment in ctx.message.attachments:
             if attachment.filename.endswith(
                 (".png", ".jpg", "jpeg", "gif")
             ):
+                # Making submission id
                 id = str(uuid.uuid4())
                 map_of_submissions[id] = ctx.message
 
@@ -553,7 +288,7 @@ Each request is a specific function (insertInlineImage, insertText, etc.)
 With index 1, all requests appear at top of page (so should be posted in reverse order)
 """
 
-
+#done
 async def post_bingo_submission(image_url, id):
 
     service = await connect_to_google()
@@ -586,8 +321,8 @@ async def post_bingo_submission(image_url, id):
 
     # LOG
     print(
-        "{0.user}: Captain, we've received an incoming transmission.  Putting on screen.".format(
-            client
+        "{0.user.display_name}: Captain, we've received an incoming transmission.  Putting on screen.".format(
+            bot
         )
     )
     print("[] Received: Submission # {0}".format(trimmedId))
@@ -601,13 +336,13 @@ BINGO_TEST_CHANNEL - Discord channel to post message to (channel ID)
 
 """
 
-
+# done
 async def submission_alert(ctx, id):
     global map_of_embed_messages, map_of_embeds
 
     trimmedId = id[:8]
     d = datetime.datetime.now()
-    # TODO: Switch to logs channel or w/e
+    # TODO: IMPORTANT---Switch to proper channel at launch
     channel = bot.fetch_channel(BINGO_TEST_CHANNEL)
     # channel = ctx.channel
 
@@ -677,7 +412,7 @@ async def deny(ctx):
     id = ctx.message.content.split()[5]
     trimmedId = id[:8]
     d = datetime.datetime.now()
-    # TODO: change to 
+    # TODO: IMPORTANT---switch to correct channel when going live
     channel = bot.fetch_channel(BINGO_TEST_CHANNEL)
     emoji = "❌"
 
@@ -785,32 +520,17 @@ Creates Discord component for selecting tasks, returns component
 """
 
 # done
+@bot.command()
 async def post(ctx):
-    view = View()
-    task_list_options = [
-        discord.SelectOption(
-            label="Task One", value=1, description="Kill a Chicken", default=False
-        ),
-        discord.SelectOption(
-            label="Task Two", value=2, description="Salute a Goblin", default=False
-        ),
-        discord.SelectOption(
-            label="Task Three", value=3, description="Eat an Anchovy", default=False
-        ),
-    ]
-    task_submit_button = discord.ui.Button(
-        label="Submit", custom_id="submit_task_button", style=discord.ButtonStyle.green
+    team, isCaptain = await find_bingo_team(ctx.author)
+    selector_embed = discord.Embed(
+        title=f"Select which task you would like to complete below:", color=0x00FFDD
     )
-    task_submit_menu = discord.ui.Select(
-        options=task_list_options,
-        custom_id="task_selection_component",
-        placeholder="Select a Task",
-        min_values=1,
-        max_values=1,
-    )
-    view.add_item(task_submit_menu)
-    view.add_item(task_submit_button)
-    await ctx.send("Select which task you would like to complete below", view=view)
+    selector_embed.set_author(name=team, icon_url="https://cdn.discordapp.com/attachments/1195577008973946890/1196237649850150952/submit-icon.png?ex=65b6e620&is=65a47120&hm=249c418a531166366bd9266cd6b8c4e00ff48974964d52b781705703fe200d3f&")
+    selector_embed.set_thumbnail(url=EMBED_ICON_URL)
+    view = Tasks(ctx)
+    view.message = await ctx.send(embed=selector_embed, view=view, ephemeral=True)
+    print(view)
 
 #
 # DISCORD API CODE
@@ -819,7 +539,6 @@ async def post(ctx):
 """
 Static Discord bot event, triggers whenever bot finishes booting up.
 """
-
 
 @bot.event
 async def on_ready():
@@ -835,10 +554,7 @@ Static Discord bot event, triggers whenever a message is sent by a user.
 """
 
 
-@bot.event
 async def on_message(message):
-    global num_submissions, map_of_submissions, client, player_titles_dict
-    global EMBED_ICON_URL, RULES_POST_URL
 
     # Tells bot to ignore its own messages
     if message.author == bot.user:
@@ -857,6 +573,7 @@ async def on_message(message):
     
     if team == "None":
         return
+    
 
 # DO NOTHING
 """
@@ -950,7 +667,6 @@ async def on_message(message):
 
 # Runs the bot
 bot.run(DISCORD_TOKEN, log_handler=handler, log_level=logging.DEBUG)
-
 
 # FUTURE IDEAS
 
