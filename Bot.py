@@ -13,7 +13,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import uuid
 
-from Views.Tasks import Tasks
+from Tasks import Tasks
 from Utils import *
 
 #
@@ -101,6 +101,7 @@ submission_responses = {
 # TODO: add toggleable options
 # TODO: convert all images to discord.File local images
 
+
 # GLOBAL COMMANDS
 # "!bingowhen" command
 # Ping pong
@@ -110,6 +111,7 @@ async def when(ctx):
     print("here")
     await ctx.channel.send("👀")
     return
+
 
 # "!bingoinfo" command
 # Displays information about the bingo event
@@ -152,8 +154,12 @@ async def me(ctx):
     # Getting member and if they're a captain
     team, isCaptain = await find_bingo_team(ctx.author)
     if team == None:
-        await ctx.channel.send("You are not in the bingo.  But it's not too late to sign up!")
+        await ctx.channel.send(
+            "You are not in the bingo.  But it's not too late to sign up!"
+        )
         return
+    else:
+        team = "Bingo Participant"
     # Player custom title
     title = player_titles_dict.get(random.randint(1, len(player_titles_dict)))
     # Player custom smack_talk/quote
@@ -162,9 +168,9 @@ async def me(ctx):
     # Custom settings for team captains
     if isCaptain:
         bingo_profile_embed = discord.Embed(
+            description="👑 Team Captain",
             title=f"Battle Bingo Player Stats",
-            color=0xFFAB00,
-            description="👑 Team Captain"
+            color=0xFFAB00,        
         )
     # Normal players
     else:
@@ -184,7 +190,9 @@ async def me(ctx):
 
     await ctx.send(embed=bingo_profile_embed)
 
+
 # CHANNEL SPECIFIC COMMANDS
+
 
 # "!bingosubmit" command
 # Tile Submition Tool
@@ -198,12 +206,10 @@ async def submit(ctx):
     # To prevent spam in rest of server
     if ctx.channel != bot.get_channel(BINGO_TEST_CHANNEL):
         return
-    
+
     if ctx.message.attachments:
         for attachment in ctx.message.attachments:
-            if attachment.filename.endswith(
-                (".png", ".jpg", "jpeg", "gif")
-            ):
+            if attachment.filename.endswith((".png", ".jpg", "jpeg", "gif")):
                 # Making submission id
                 id = str(uuid.uuid4())
                 map_of_submissions[id] = ctx.message
@@ -213,9 +219,7 @@ async def submit(ctx):
                 # posting to google sheets
                 # TODO: send team info, task id to sheets (gspread?)
                 # TODO: from google, send back player success
-                await post_bingo_submission(
-                    attachment.url, id
-                )
+                await post_bingo_submission(attachment.url, id)
 
                 # posting to #posthere channel
                 await ctx.channel.send(
@@ -288,9 +292,9 @@ Each request is a specific function (insertInlineImage, insertText, etc.)
 With index 1, all requests appear at top of page (so should be posted in reverse order)
 """
 
-#done
-async def post_bingo_submission(image_url, id):
 
+# done
+async def post_bingo_submission(image_url, id):
     service = await connect_to_google()
     trimmedId = id[:8]
 
@@ -336,6 +340,7 @@ BINGO_TEST_CHANNEL - Discord channel to post message to (channel ID)
 
 """
 
+
 # done
 async def submission_alert(ctx, id):
     global map_of_embed_messages, map_of_embeds
@@ -351,9 +356,11 @@ async def submission_alert(ctx, id):
         title=f"Submission #\n{trimmedId}", url=ctx.message.jump_url, color=0x0A0AAB
     )
     submission_embed.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
-    submission_embed.set_thumbnail(url=ctx.message.attachments[0].url) # is .url needed here?
+    submission_embed.set_thumbnail(
+        url=ctx.message.attachments[0].url
+    )  # is .url needed here?
     submission_embed.add_field(name="Posted on: \n", value=d.strftime("%B %d %X"))
-    
+
     # Posting embed the custom embed
     embed_message = await channel.send(embed=submission_embed)
 
@@ -369,6 +376,7 @@ BINGO_TEST_CHANNEL - Discord channel to post message to (channel ID)
 Splices the UUID out of the message, uses as key to retrieve specific embed and embed message.
 Updates embed with approval time, deletes old post, creates new post.
 """
+
 
 # done
 async def approve(ctx):
@@ -386,7 +394,9 @@ async def approve(ctx):
 
     # LOG
     print(
-        "{0.user.display_name}: Captain, submission {1} has been approved.".format(bot, trimmedId)
+        "{0.user.display_name}: Captain, submission {1} has been approved.".format(
+            bot, trimmedId
+        )
     )
 
     embed = map_of_embeds.get(id)
@@ -405,8 +415,9 @@ Splices the UUID out of the message, uses as key to retrieve specific embed and 
 Updates embed with approval time, deletes old post, creates new post.
 """
 
+
 # done
-async def deny(ctx):    
+async def deny(ctx):
     global map_of_submissions
 
     id = ctx.message.content.split()[5]
@@ -421,7 +432,9 @@ async def deny(ctx):
 
     # LOG
     print(
-        "{0.user.display_name}: Captain, submission {1} has been DENIED.".format(bot, trimmedId)
+        "{0.user.display_name}: Captain, submission {1} has been DENIED.".format(
+            bot, trimmedId
+        )
     )
 
     embed = map_of_embeds.get(id)
@@ -455,19 +468,25 @@ Cycle through all bingo teams, if user has role, return team name.
 # done
 async def find_bingo_team(user):
     isCaptain = False
+    isBingo = False
     roles = user.roles
 
     for i in roles:
         if i.id == CAPTAIN_ROLE:
             isCaptain = True
+        elif i.id == GENERAL_BINGO_ROLE:
+            isBingo = True
 
     for key in BINGO_TEAM_ROLES.keys():
         for role in roles:
             if key == role.id:
                 # Returning team/captain?
                 return (BINGO_TEAM_ROLES.get(key), isCaptain)
+    if (isBingo):
+        return("Bingo", None)        
 
     return (None, None)
+
 
 # done
 """
@@ -476,6 +495,7 @@ Choose random team, pass team through hardcoded dict, return finalized string.
 TODO: I do not like how this is coded.  Is there a better way?
 """
 LIST_SIZE = 21
+
 
 # done
 def get_smack_talk():
@@ -519,18 +539,24 @@ Creates a dropdown selector for each task
 Creates Discord component for selecting tasks, returns component
 """
 
+
 # done
 @bot.command()
-async def post(ctx):
+async def post(ctx) -> None:
     team, isCaptain = await find_bingo_team(ctx.author)
+
     selector_embed = discord.Embed(
         title=f"Select which task you would like to complete below:", color=0x00FFDD
     )
-    selector_embed.set_author(name=team, icon_url="https://cdn.discordapp.com/attachments/1195577008973946890/1196237649850150952/submit-icon.png?ex=65b6e620&is=65a47120&hm=249c418a531166366bd9266cd6b8c4e00ff48974964d52b781705703fe200d3f&")
-    selector_embed.set_thumbnail(url=EMBED_ICON_URL)
-    view = Tasks(ctx)
-    view.message = await ctx.send(embed=selector_embed, view=view, ephemeral=True)
-    print(view)
+    selector_embed.set_author(
+        name=team,
+        icon_url="https://cdn.discordapp.com/attachments/1195577008973946890/1196237649850150952/submit-icon.png?ex=65b6e620&is=65a47120&hm=249c418a531166366bd9266cd6b8c4e00ff48974964d52b781705703fe200d3f&",
+    )
+    selector_embed.set_thumbnail(url=EMBED_ICON_URL)    
+
+    view = Tasks(ctx.author)
+    view.message = await ctx.send(embed=selector_embed, view=view)
+
 
 #
 # DISCORD API CODE
@@ -539,6 +565,7 @@ async def post(ctx):
 """
 Static Discord bot event, triggers whenever bot finishes booting up.
 """
+
 
 @bot.event
 async def on_ready():
@@ -555,7 +582,6 @@ Static Discord bot event, triggers whenever a message is sent by a user.
 
 
 async def on_message(message):
-
     # Tells bot to ignore its own messages
     if message.author == bot.user:
         return
@@ -570,10 +596,10 @@ async def on_message(message):
     if message.content.startswith("❌"):
         await deny(message)
         return
-    
+
     if team == "None":
         return
-    
+
 
 # DO NOTHING
 """
