@@ -11,16 +11,16 @@ from Utils import task_list
 
 
 class Tasks(discord.ui.View):
-    message: discord.Message | None = None
-    task = 0
-    task_list_options = []
+
+    current_page = 1
+    separator = 9
+    task = 1
 
     def __init__(
         self, user: discord.User | discord.Member, timeout: float = 60.0) -> None:
         super().__init__(timeout=timeout)
         self.user = user
 
-    # checks for views interactions
     async def interaction_check(self, interaction: Interaction[discord.Client]) -> bool:
         if interaction.user == self.user:
             return True
@@ -35,40 +35,69 @@ class Tasks(discord.ui.View):
         if self.message:
             await self.message.edit(view=self)
     
-    # populate task list
-    # TODO: can task descriptions be truncated somehow?  they're awfully long
-    for i in task_list:
-        task_list_options.append(
-            discord.SelectOption(
-                label=f"Tile # {i}" ,
-                value=i,
-                description=f"Point Value: {task_list.get(i)[1]}",
-                default=False,
-            )
-        )
+    async def send(self, ctx):
+        self.message = await ctx.send(view = self)
+        await self.update_message(self.data[:self.separator])
     
-    @discord.ui.select(
-        placeholder="Select a Task",
-        options=task_list_options[:9],
-        custom_id="task_selection_component_tasks 1-9",
-        min_values=1,
-        max_values=1,
-    )
-    async def select(self, interaction: discord.Interaction, select: discord.ui.Select):
-        self.task = select.values[0]
-        print("task: " + self.task)
-        # BELOW FOR PRODUCTION!
-        task_str = task_list.get(int(self.task))
-        message = (
-            "You selected Tile #"
-            + self.task
-            + ": "
-            + task_str
-            + "\nAre you sure you've picked the correct task?"
-        )
-        await interaction.response.send_message(message, ephemeral=True)
+    def create_embed(self, data):        
+        embed = discord.Embed(title="Battle Bingo Task List")
+        if self.current_page == 1:
+            count = 1
+        else:
+            count = (self.current_page - 1) * self.separator + 1
+            
+        for item in data:
+            embed.add_field(name=f"Task #{count}", value=item, inline=False)
+            count += 1
+        return embed
 
+    async def update_message(self, data):
+        self.update_buttons()
+        await self.message.edit(embed=self.create_embed(data), view=self)
 
-    @discord.ui.button(label="Submit", custom_id="submit_task_button", style=discord.ButtonStyle.green,)
-    async def submit_button(self, button: discord.ui.Button, interaction: discord.Interaction):
-        await interaction.response.send_message("You chose Tile #" + self.task + ".  Good luck gamer!",)
+    def update_buttons(self):
+        if self.current_page == 1:
+            self.first_page_button.disabled = True
+            self.prev_page_button.disabled = True
+        else:
+            self.first_page_button.disabled = False
+            self.prev_page_button.disabled = False
+            
+        if self.current_page == int(len(self.data) / self.separator) + 1:
+            self.last_page_button.disabled = True
+            self.next_page_button.disabled = True
+        else:
+            self.last_page_button.disabled = False
+            self.next_page_button.disabled = False
+
+    @discord.ui.button(label="|<", custom_id="first_page_button", style=discord.ButtonStyle.blurple)
+    async def first_page_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.current_page = 1
+        until_item = self.current_page * self.separator
+        from_item = until_item - self.separator
+        await self.update_message(self.data[:until_item])
+
+    @discord.ui.button(label="<", custom_id="prev_page_button", style=discord.ButtonStyle.blurple)
+    async def prev_page_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.current_page -= 1
+        until_item = self.current_page * self.separator
+        from_item = until_item - self.separator
+        await self.update_message(self.data[from_item:until_item])
+        
+    @discord.ui.button(label=">", custom_id="next_page_button", style=discord.ButtonStyle.blurple)
+    async def next_page_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.current_page += 1
+        until_item = self.current_page * self.separator
+        from_item = until_item - self.separator
+        await self.update_message(self.data[from_item:until_item])
+        
+    @discord.ui.button(label=">|", custom_id="last_page_button", style=discord.ButtonStyle.blurple)
+    async def last_page_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.current_page = int(len(self.data) / self.separator) + 1
+        until_item = self.current_page * self.separator
+        from_item = until_item - self.separator
+        await self.update_message(self.data[from_item:])
