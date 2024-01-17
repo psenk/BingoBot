@@ -1,6 +1,7 @@
 discord.log
-.replit
+.vscode
 .env
+__pycache__
 service_account.json
 poetry.lock
 pyproject.toml
