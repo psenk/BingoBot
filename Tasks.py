@@ -5,7 +5,7 @@ import typing
 from discord.interactions import Interaction
 from discord.ui import View
 
-from Utils import task_list
+from Data import task_list
 
 # TODO: show only non-completed tasks
 
