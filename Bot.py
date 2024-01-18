@@ -9,6 +9,7 @@ import gspread
 from dotenv import load_dotenv
 import wom
 from wom import CompetitionStatus
+import mysql.connector
 
 load_dotenv()
 from google.oauth2 import service_account
@@ -17,6 +18,7 @@ import uuid
 
 from Tasks import Tasks
 from Data import *
+import Queries
 
 #
 # CONSTANTS
@@ -26,6 +28,9 @@ from Data import *
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GOOGLE_DOCS_KEY = os.getenv("GOOGLE_DOCS_KEY")
 GOOGLE_SHEETS_KEY = os.getenv("GOOGLE_SHEETS_KEY")
+DB_LOCALHOST = os.getenv("MYSQL_LOCALHOST")
+DB_USER_NAME = os.getenv("MYSQL_USER_NAME")
+DB_PW = os.getenv("MYSQL_PW")
 WISE_OLD_MAN_COMPETITION_KEY = 36530
 # TEST CHANNELS & WEBHOOKS
 # Logic's Server
@@ -48,7 +53,7 @@ BINGO_TEAM_ROLES = {
     1196183533308358696: "Bingo Team Blepe",
     1196916756384600074: "Bingo Team Unphased",
     # For testing
-    1195556259160666172: "Test"
+    1195556259160666172: "Team Test",
 }
 CAPTAIN_ROLE = 1195584494636384321
 # URLs & MESSAGES
@@ -64,7 +69,7 @@ RULES_POST_MSG = 1193042254751879218
 intents = discord.Intents.all()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!bingo", intents=intents)
-gc = gspread.service_account(filename='service_account.json')
+gc = gspread.service_account(filename="service_account.json")
 wom_client = wom.Client()
 # TEST
 handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
@@ -112,6 +117,16 @@ submission_responses = {
 # TODO: convert all images to discord.File local images
 
 
+# "!bingotest" command
+# For testing purposes
+@bot.command()
+async def test(ctx):
+
+
+    # make custom embed for submissions?
+    return
+
+
 # GLOBAL COMMANDS
 # "!bingowhen" command
 # Ping pong
@@ -119,6 +134,18 @@ submission_responses = {
 @bot.command()
 async def when(ctx):
     await ctx.channel.send("👀")
+    return
+
+
+# "!bingoquit" command
+# Closes the bot
+@bot.command()
+async def quit(ctx):
+    await ctx.send("Powering down.  Later nerds.")
+    await wom_client.close()
+    print("Wise Old Man connection closed.")
+    await bot.close()
+    print("Bot powered down.")
     return
 
 
@@ -145,8 +172,16 @@ async def info(ctx):
     bingo_info_embed.add_field(name="Second place prize:", value="Refunded entry fee")
     bingo_info_embed.add_field(name="Points Achieveable:", value="200")
     bingo_info_embed.add_field(name="", value="", inline=False)
-    bingo_info_embed.add_field(name="Win Condition:", value="First team to blackout the standard board OR the team with the most points by event end is the winner.", inline=False)
-    bingo_info_embed.add_field(name="", value="Each day for the first ten days a new batch of tiles will release between 5:30-6:00 PM EST", inline=False)
+    bingo_info_embed.add_field(
+        name="Win Condition:",
+        value="First team to blackout the standard board OR the team with the most points by event end is the winner.",
+        inline=False,
+    )
+    bingo_info_embed.add_field(
+        name="",
+        value="Each day for the first ten days a new batch of tiles will release between 5:30-6:00 PM EST",
+        inline=False,
+    )
     bingo_info_embed.add_field(name="", value="Watch for a Discord ping!", inline=False)
     bingo_info_embed.add_field(name="", value="", inline=False)
     bingo_info_embed.add_field(name="Team Poop", value="Captain: Hokumpoke")
@@ -175,7 +210,7 @@ async def me(ctx):
             "You are not in the bingo.  But it's not too late to sign up!"
         )
         return
-    else:
+    elif team == "Bingo":
         team = "Bingo Participant"
     # Player custom title
     title = player_titles_dict.get(random.randint(1, len(player_titles_dict)))
@@ -187,7 +222,7 @@ async def me(ctx):
         bingo_profile_embed = discord.Embed(
             description="👑 Team Captain",
             title=f"Battle Bingo Player Stats",
-            color=0xFFAB00,        
+            color=0xFFAB00,
         )
     # Normal players
     else:
@@ -207,41 +242,50 @@ async def me(ctx):
     await ctx.send(embed=bingo_profile_embed)
     return
 
+
 # "!bingotasks" command
 # Displays list of ALL tasks
 # TODO: Trim these town to all unlocked tasks
 # done
 @bot.command()
-async def DISABLEDtasks(ctx):   
+async def DISABLEDtasks(ctx):
     view = Tasks(ctx.author)
     view.data = list(task_list.values())
 
     await view.send(ctx)
     return
 
+
 # "!bingomenu" command
 # Displays the bingo menu command
 @bot.command()
 async def menu(ctx):
-
     bingo_info_embed = discord.Embed(
         title=f"Foki Bot Commands",
         color=0x00FFDD,
         description="Type these commands in any chat.",
     )
-    bingo_info_embed.set_author(name=bot.user.display_name, icon_url=bot.user.display_avatar)
+    bingo_info_embed.set_author(
+        name=bot.user.display_name, icon_url=bot.user.display_avatar
+    )
     bingo_info_embed.set_thumbnail(url=EMBED_ICON_URL)
     bingo_info_embed.add_field(name="!bingomenu", value="This menu.")
-    bingo_info_embed.add_field(name="!bingoinfo", value="Information about the bingo event.")
+    bingo_info_embed.add_field(
+        name="!bingoinfo", value="Information about the bingo event."
+    )
     bingo_info_embed.add_field(name="!bingome", value="Your bingo player card.")
     bingo_info_embed.add_field(name="", value="", inline=False)
     bingo_info_embed.add_field(name="!bingorules", value="The official bingo rules.")
     bingo_info_embed.add_field(name="!bingowhen", value="Ping pong.")
-    bingo_info_embed.add_field(name="!bingotasks", value="DISABLED UNTIL BINGO START\nShows a list of all currently available bingo tasks.")
+    bingo_info_embed.add_field(
+        name="!bingotasks",
+        value="DISABLED UNTIL BINGO START\nShows a list of all currently available bingo tasks.",
+    )
     bingo_info_embed.add_field(name="", value="", inline=False)
-    bingo_info_embed.add_field(name="!bingosubmit", value="UNDER CONSTRUCTION DO NOT USE\nTile Submission Tool, used to submit your tile completion screenshots.")
-
-
+    bingo_info_embed.add_field(
+        name="!bingosubmit",
+        value="UNDER CONSTRUCTION DO NOT USE\nTile Submission Tool, used to submit your tile completion screenshots.",
+    )
 
     await ctx.send(embed=bingo_info_embed)
     return
@@ -251,39 +295,94 @@ async def menu(ctx):
 # Display the bingo rules
 @bot.command()
 async def rules(ctx):
-    
-    bingo_rules_embed = discord.Embed(
-        title=f"General Bingo Rules",
-        color=0x00FFDD
+    bingo_rules_embed = discord.Embed(title=f"General Bingo Rules", color=0x00FFDD)
+    bingo_rules_embed.set_author(
+        name=bot.user.display_name, icon_url=bot.user.display_avatar
     )
-    bingo_rules_embed.set_author(name=bot.user.display_name, icon_url=bot.user.display_avatar)
     bingo_rules_embed.set_thumbnail(url=EMBED_ICON_URL)
-    bingo_rules_embed.add_field(name="1.", value="All screenshots submitted must contain: the bingo keyword, the name of the user who obtained the drop, proof of the drop (chat message, loot on the ground, etc,) and any other tile-specific identifying information.  It is preferred that you just submit a screenshot of your entire RuneLite window or phone screen.  Submissions without these items will not be accepted, no exceptions.", inline=False)
-    bingo_rules_embed.add_field(name="2.", value="All submissions will be posted in the appropriate team private channel.", inline=False)
-    bingo_rules_embed.add_field(name="3.", value="Don't do a name change during bingo. It screws up your tracking and you won't get credit for completing tiles.", inline=False)
-    bingo_rules_embed.add_field(name="4.", value="A drop has to be in your name to count for tile completion. Content may be done in mixed groups, however any drops will only count toward the team of the person who obtained the drop.", inline=False)
-    bingo_rules_embed.add_field(name="5.", value="For any of the \"most\" style challenge tasks; you decide when to stop and what your best is. These will be blind submissions I reveal at the end.", inline=False)
+    bingo_rules_embed.add_field(
+        name="1.",
+        value="All screenshots submitted must contain: the bingo keyword, the name of the user who obtained the drop, proof of the drop (chat message, loot on the ground, etc,) and any other tile-specific identifying information.  It is preferred that you just submit a screenshot of your entire RuneLite window or phone screen.  Submissions without these items will not be accepted, no exceptions.",
+        inline=False,
+    )
+    bingo_rules_embed.add_field(
+        name="2.",
+        value="All submissions will be posted in the appropriate team private channel.",
+        inline=False,
+    )
+    bingo_rules_embed.add_field(
+        name="3.",
+        value="Don't do a name change during bingo. It screws up your tracking and you won't get credit for completing tiles.",
+        inline=False,
+    )
+    bingo_rules_embed.add_field(
+        name="4.",
+        value="A drop has to be in your name to count for tile completion. Content may be done in mixed groups, however any drops will only count toward the team of the person who obtained the drop.",
+        inline=False,
+    )
+    bingo_rules_embed.add_field(
+        name="5.",
+        value='For any of the "most" style challenge tasks; you decide when to stop and what your best is. These will be blind submissions I reveal at the end.',
+        inline=False,
+    )
     bingo_rules_embed.add_field(name="", value="", inline=False)
-    bingo_rules_embed.add_field(name="Alts:", value="From January 25th through February 11th at Midnight CST, see Discord post [here](https://discord.com/channels/741153043776667658/1193039460980502578/1194298395616083978) for what's allowed regarding alts.", inline=False)
-    bingo_rules_embed.add_field(name="", value="Starting at 12am CST on February 12th alts can go wild! This allows using alts in any way that is NOT working on different tiles at the same time.", inline=False)
-    bingo_rules_embed.add_field(name="", value="For the entire event (even the last three days), you will be banned from bingo if caught working on multiple tiles on different accounts at the same time or using an alt in a non-approved way.", inline=False)
-    bingo_rules_embed.add_field(name="", value="If you plan to play on multiple accounts, I WILL ONLY TRACK THE ACCOUNT IN WISEOLDMAN. Pick one and let me know before bingo starts. I don't care what account you complete tiles on, so long as you know I will only track one for xp/kc tiles.", inline=False)
-    bingo_rules_embed.add_field(name="Prep:", value="Prep anything you want EXCEPT things like storing raids purples.")
+    bingo_rules_embed.add_field(
+        name="Alts:",
+        value="From January 25th through February 11th at Midnight CST, see Discord post [here](https://discord.com/channels/741153043776667658/1193039460980502578/1194298395616083978) for what's allowed regarding alts.",
+        inline=False,
+    )
+    bingo_rules_embed.add_field(
+        name="",
+        value="Starting at 12am CST on February 12th alts can go wild! This allows using alts in any way that is NOT working on different tiles at the same time.",
+        inline=False,
+    )
+    bingo_rules_embed.add_field(
+        name="",
+        value="For the entire event (even the last three days), you will be banned from bingo if caught working on multiple tiles on different accounts at the same time or using an alt in a non-approved way.",
+        inline=False,
+    )
+    bingo_rules_embed.add_field(
+        name="",
+        value="If you plan to play on multiple accounts, I WILL ONLY TRACK THE ACCOUNT IN WISEOLDMAN. Pick one and let me know before bingo starts. I don't care what account you complete tiles on, so long as you know I will only track one for xp/kc tiles.",
+        inline=False,
+    )
+    bingo_rules_embed.add_field(
+        name="Prep:",
+        value="Prep anything you want EXCEPT things like storing raids purples.",
+    )
 
     bingo_rules_embed2 = discord.Embed(
-        title=f"Battle Bingo Competition Rules",
-        color=0x00FFDD
+        title=f"Battle Bingo Competition Rules", color=0x00FFDD
     )
-    bingo_rules_embed2.set_author(name=bot.user.display_name, icon_url=bot.user.display_avatar)
+    bingo_rules_embed2.set_author(
+        name=bot.user.display_name, icon_url=bot.user.display_avatar
+    )
     bingo_rules_embed2.set_thumbnail(url=EMBED_ICON_URL)
-    bingo_rules_embed2.add_field(name="1.", value="For tiles that require you to purchase something, multiple players combining points is not allowed. Example: One player must get all 1000 molch pearls to buy the fish sack. It cant be player 1 with 600, and player 2 with 400.", inline=False)
-    bingo_rules_embed2.add_field(name="2.", value="There will be challenges where you will compete live with other teams. Have fun with it. Don't be turds.", inline=False)
-    bingo_rules_embed2.add_field(name="3.", value="Tiles can only be approved for completion after they have been announced, and submitted with a timestamp after the annoucement.", inline=False)
-    bingo_rules_embed2.add_field(name="4.", value="A Pet counts as any unique for any \"Obtain\" tile. Things like 'ashes', unique bones, special teleports do not count toward uniques, unless otherwise specified.", inline=False)
+    bingo_rules_embed2.add_field(
+        name="1.",
+        value="For tiles that require you to purchase something, multiple players combining points is not allowed. Example: One player must get all 1000 molch pearls to buy the fish sack. It cant be player 1 with 600, and player 2 with 400.",
+        inline=False,
+    )
+    bingo_rules_embed2.add_field(
+        name="2.",
+        value="There will be challenges where you will compete live with other teams. Have fun with it. Don't be turds.",
+        inline=False,
+    )
+    bingo_rules_embed2.add_field(
+        name="3.",
+        value="Tiles can only be approved for completion after they have been announced, and submitted with a timestamp after the annoucement.",
+        inline=False,
+    )
+    bingo_rules_embed2.add_field(
+        name="4.",
+        value="A Pet counts as any unique for any \"Obtain\" tile. Things like 'ashes', unique bones, special teleports do not count toward uniques, unless otherwise specified.",
+        inline=False,
+    )
 
     await ctx.send(embed=bingo_rules_embed)
     await ctx.send(embed=bingo_rules_embed2)
     return
+
 
 # CHANNEL SPECIFIC COMMANDS
 
@@ -294,15 +393,16 @@ async def rules(ctx):
 # Data about the interaction is used for recognizing submissions
 # TODO: IMPORTANT---Data persistance
 @bot.command()
-async def submit(ctx, task:int):
-    
+async def submit(ctx, task: int):
     if task > len(task_list) or task <= 0:
         ctx.send("Task number out of bounds.")
-    
+
     # TODO: IMPORTANT---switch before going live
     # Targeting submissions in a specific channel
     # To prevent spam in rest of server
-    if ctx.channel != bot.get_channel(BINGO_TEST_CHANNEL) and ctx.channel != bot.get_channel(TEST_SUBMISSIONS_CHANNEL):
+    if ctx.channel != bot.get_channel(
+        BINGO_TEST_CHANNEL
+    ) and ctx.channel != bot.get_channel(TEST_SUBMISSIONS_CHANNEL):
         return
 
     team, isCaptain = await find_bingo_team(ctx.author)
@@ -314,19 +414,27 @@ async def submit(ctx, task:int):
             if attachment.filename.endswith((".png", ".jpg", ".jpeg", ".gif")):
                 # Making submission id
                 id = str(uuid.uuid4())
+                # Map of id : messages
                 map_of_submissions[id] = ctx.message
 
+                # Confirmation window
                 toPost = await post(ctx, attachment.url, task)
                 if not toPost:
                     return
-                
+
                 await ctx.send(
                     "I will take your submission to Bingo Overlord Foki for review."
                 )
-                
+
                 # Posting to Google Docs/Sheets
                 await post_bingo_submission(attachment.url, id, task)
-                           
+
+                # Updating database
+                await Queries.add_submission(
+                    task, attachment.url, ctx.author.display_name, team
+                )
+
+                # Updating Google sheets
                 await update_team_sheet(team, task, ctx.author.display_name, 1)
 
                 # snarky options if desired
@@ -382,7 +490,6 @@ async def connect_to_google():
             bot
         )
     )
-
     return service
 
 
@@ -398,12 +505,12 @@ With index 1, all requests appear at top of page (so should be posted in reverse
 
 
 # done
-async def post_bingo_submission(image_url, id, task:int):
+async def post_bingo_submission(image_url, id, task: int):
     global live_submissions
-    
+
     service = await connect_to_google()
     trimmedId = id[:8]
-    
+
     live_submissions[trimmedId] = task
 
     # adding image to document via HTTP requests
@@ -438,6 +545,7 @@ async def post_bingo_submission(image_url, id, task:int):
         )
     )
     print("Transmited: Submission # {0}".format(trimmedId))
+    service.close()
 
 
 """
@@ -463,7 +571,9 @@ async def submission_alert(ctx, id):
     submission_embed = discord.Embed(
         title=f"Submission #\n{trimmedId}", url=ctx.message.jump_url, color=0x0A0AAB
     )
-    submission_embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
+    submission_embed.set_author(
+        name=ctx.author.display_name, icon_url=ctx.author.display_avatar
+    )
     submission_embed.set_thumbnail(
         url=ctx.message.attachments[0].url
     )  # is .url needed here?
@@ -485,17 +595,19 @@ Splices the UUID out of the message, uses as key to retrieve specific embed and 
 Updates embed with approval time, deletes old post, creates new post.
 """
 
-
+# TODO: THIS ISNT WORKING
 # done
 async def approve(message):
     global map_of_submissions, map_of_embed_messages, live_submissions
+
     id = message.content.split()[5]
     trimmedId = id[:8]
     d = datetime.datetime.now()
+
     # TODO: IMPORTANT---change to production channel before launch
     channel = await bot.fetch_channel(BINGO_TEST_CHANNEL)
     emoji = "✅"
-    
+
     submission = map_of_submissions.get(id)
     # bot adds reaction to submission post to show approval
     await submission.add_reaction(emoji)
@@ -503,7 +615,10 @@ async def approve(message):
     task = live_submissions.get(trimmedId)
     team, isCaptain = await find_bingo_team(submission.author)
     await update_team_sheet(team, task, author, 2)
-    
+
+    # Updating database
+    await Queries.task_complete(team, task, author)
+    await Queries.remove_submission(task, team)
 
     embed = map_of_embeds.get(id)
     embed_message = map_of_embed_messages.get(id)
@@ -532,22 +647,26 @@ Updates embed with approval time, deletes old post, creates new post.
 # done
 async def deny(message):
     global map_of_submissions, map_of_embed_messages, live_submissions
-    
+
     id = message.content.split()[5]
     trimmedId = id[:8]
     d = datetime.datetime.now()
-    
+
     # TODO: IMPORTANT---switch to correct channel when going live
     channel = await bot.fetch_channel(BINGO_TEST_CHANNEL)
     emoji = "❌"
+
     submission = map_of_submissions.get(id)
     # bot adds reaction to submission post to show approval
     await submission.message.add_reaction(emoji)
-    
+
     author = submission.author.display_name
     task = live_submissions.get(trimmedId)
     team, isCaptain = await find_bingo_team(submission.author)
     await update_team_sheet(team, task, author, 3)
+
+    # Updating database
+    await Queries.remove_submission(task, team)
 
     # LOG
     print(
@@ -601,8 +720,8 @@ async def find_bingo_team(user):
             if key == role.id:
                 # Returning team/captain?
                 return (BINGO_TEAM_ROLES.get(key), isCaptain)
-    if (isBingo):
-        return("Bingo", None)        
+    if isBingo:
+        return ("Bingo", None)
 
     return (None, None)
 
@@ -646,6 +765,27 @@ def get_smack_talk(teamIn):
         19: f"I bet {team} eats boneless wings.",
         20: f"{team} must play RS3.",
         21: f"Uh ... {team}'s gonna need more people.",
+        22: f"{team} are legit bad.",
+        23: f"I wonder if {team} are actually trying.",
+        24: f"My mom thinks {team} are trying really hard.",
+        25: f"Sit {team}.",
+        26: f"{team} has two brain cells and they are fighting for third place",
+        27: f"{team} are the reason the gene pool needs a lifeguard.",
+        28: f"Maybe {team} should take up checkers.",
+        29: f"Is {team}'s strategy to get as far behind as possible?",
+        30: f"Do I really need to insult {team} more? Just look at them.",
+        31: f"Bless {team}'s heart.",
+        32: f"It's cute how much {team} are trying.",
+        33: f"If a team were the human equivalent of a participation trophy, it would be {team}.",
+        34: f"My days of not taking {team} seriously have come to a continue not taking them seriously.",
+        35: f"They have their entire life to relax, not sure why {team} decided to do it during bingo.",
+        36: f"{team} are a group of goblins.",
+        37: f"Maybe {team} should try something more their speed, like a group ironman.",
+        38: f"{team} can't even count to yellow.",
+        39: f"I really appreciate {team}. They make me feel like we don't have to try as hard.",
+        40: f"The closest {team} comes to a brainstorm is a light drizzle.",
+        41: f"I wonder if Baldy is actually playing for {team}...",
+        42: f"I feel bad. The only thing {team} will get for this performance is a clan credit.",
     }
     talk = random.randint(1, len(player_smack_talk))
     return player_smack_talk.get(talk)
@@ -661,31 +801,40 @@ Creates embed with task submission info, asks for verification.  Submit returns 
 
 # done
 async def post(ctx, icon, task):
-    
     bingo_submit_embed = discord.Embed(
         title=f"Verify Task Submission",
         color=0x00FFDD,
     )
-    bingo_submit_embed.set_author(name=bot.user.display_name, icon_url=bot.user.display_avatar)
+    bingo_submit_embed.set_author(
+        name=bot.user.display_name, icon_url=bot.user.display_avatar
+    )
     bingo_submit_embed.set_thumbnail(url=icon)
     bingo_submit_embed.add_field(name=f"Task #{task}", value=task_list.get(task))
 
     class SubmitButton(discord.ui.View):
         submitPost = False
-        
-        @discord.ui.button(label="Submit", custom_id="submit", style=discord.ButtonStyle.green)
+
+        @discord.ui.button(
+            label="Submit", custom_id="submit", style=discord.ButtonStyle.green
+        )
         async def submit(self, interaction, button):
             self.submitPost = True
             await interaction.response.defer()
-            
 
-        @discord.ui.button(label="Cancel", custom_id="cancel", style=discord.ButtonStyle.red)
+        @discord.ui.button(
+            label="Cancel", custom_id="cancel", style=discord.ButtonStyle.red
+        )
         async def cancel(self, interaction, button):
             await interaction.response.defer()
-        
+
     view = SubmitButton()
 
-    are_you_sure = await ctx.send("Are you sure this is the task you want to submit?", embed=bingo_submit_embed, view=view, ephemeral=True)
+    are_you_sure = await ctx.send(
+        "Are you sure this is the task you want to submit?",
+        embed=bingo_submit_embed,
+        view=view,
+        ephemeral=True,
+    )
     await bot.wait_for("interaction")
     await are_you_sure.delete()
     return view.submitPost
@@ -704,68 +853,77 @@ Updates the task cell on Google Sheets per code status
 # done
 async def update_team_sheet(team: str, task: int, player: str, code: int):
     # CODES: 1 = Awaiting Approval, 2 = Complete, 3 = Incomplete
-    
+
     d = datetime.datetime.now()
     sheet = gc.open_by_key(GOOGLE_SHEETS_KEY)
-    
+
     TASK_STATUS_COLUMN = 6
     TASK_DATE_COLUMN = 7
     cell_row = task + 1
-    
+
     # Getting team specific sheet
     team_sheet = sheet.worksheet(team)
-    
+
     # Updating task on team sheet
     if code == 1:
         team_sheet.update_cell(cell_row, TASK_STATUS_COLUMN, "Awaiting Approval")
         team_sheet.update_cell(cell_row, TASK_DATE_COLUMN, str(d))
-        print("MX TEAM: Transmitting \"{0} department\" payload for Starfleet approval.".format(team))
+        print(
+            'MX TEAM: Transmitting "{0} department" payload for Starfleet approval.'.format(
+                team
+            )
+        )
     elif code == 2:
         current_score = int(team_sheet.cell(4, 11).value)
         points = task_points.get(task)
         team_sheet.update_cell(cell_row, TASK_STATUS_COLUMN, "Complete")
         team_sheet.update_cell(cell_row, TASK_DATE_COLUMN, str(d))
         team_sheet.update_cell(4, 11, (current_score + points))
-        print("MX TEAM: The \"{0} department's\" payload has been approved.".format(team))
+        print(
+            'MX TEAM: The "{0} department\'s" payload has been approved.'.format(team)
+        )
     else:
         team_sheet.update_cell(cell_row, TASK_STATUS_COLUMN, "Incomplete")
         team_sheet.update_cell(cell_row, TASK_DATE_COLUMN, str(d))
-        print("MX TEAM: The \"{0} department's\" payload was rejected.".format(team))
-    
-    history_sheet = sheet.worksheet('History')
+        print('MX TEAM: The "{0} department\'s" payload was rejected.'.format(team))
+
+    history_sheet = sheet.worksheet("History")
     print("MX TEAM: Interaction recorded.")
-    history_sheet.insert_row([player, team, task, code, str(d)],index=2)
+    history_sheet.insert_row([player, team, task, code, str(d)], index=2)
+
 
 """
 Connects to WOM API and gets competition data.
 Returns player XP gained during competition.
 """
 
+
 # done
 async def wise_old_man(ctx):
-    
     wom_client.set_user_agent("@kyanize.")
 
     # LOG
     print(
         "{0.user.display_name}: Captain, incoming transmission from Wise Old Man {1}, a retired Tal Shiar agent.".format(
-            bot, ctx.author.nick
+            bot, ctx.author.display_name
         )
     )
-    
-    result = await wom_client.players.get_competition_standings(ctx.nick, CompetitionStatus.Ongoing)    
-    
+
+    result = await wom_client.players.get_competition_standings(
+        ctx.author.display_name, CompetitionStatus.Ongoing
+    )
     if result.is_ok:
         result = result.to_dict()
-        if len(result.get('value')) == 0:
+        if len(result.get("value")) == 0:
             gained = "Not currently available."
         else:
-            gained = result.get('value')[0].get('progress').get('gained')
-    else:        
+            gained = result.get("value")[0].get("progress").get("gained")
+    else:
         gained = "Not currently available."
-    
+
     return gained
-  
+
+
 #
 # DISCORD API CODE
 #
@@ -780,7 +938,6 @@ async def on_ready():
     # LOG
     print("{0.user.display_name}: Captain, warp drive is online.".format(bot))
     await wom_client.start()
-    
     return
 
     # Custom discord announcement
@@ -791,35 +948,37 @@ async def on_ready():
 Static Discord bot event, triggers whenever a message is sent by a user.
 """
 
+
 @bot.event
 async def on_message(message):
     # TODO: if message NOT IN these channels:
     await bot.process_commands(message)
-    
+
     if message.author.id == 483092611419078659:
-        await message.add_reaction('🖕')
-    
-    # Tells bot to ignore its own messages    
+        await message.add_reaction("🖕")
+
+    # Tells bot to ignore its own messages
     if message.author == bot.user:
         return
     #  or message.author.id == WEBHOOK_USER_ID
-    if message.content.startswith('✅'):
+    if message.content.startswith("✅"):
         await approve(message)
         return
-    if message.content.startswith('❌'):
+    if message.content.startswith("❌"):
         await deny(message)
         return
-    
+
     team, isCaptain = await find_bingo_team(message.author)
-    
+
     if team == "None":
         return
-    
+
     if message.channel.id == BINGO_TEST_CHANNEL:
         if message.content == "ping":
             await message.channel.send("pong")
             return
         # Bot responds to commands sent from Google API via Webhook
+
 
 """
     if message.channel == client.get_channel(TEST_SUBMISSIONS_CHANNEL):
