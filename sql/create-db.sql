@@ -1,18 +1,18 @@
 CREATE DATABASE IF NOT EXISTS `battle_bingo`;
 USE `battle_bingo`;
 
-DROP TABLE IF EXISTS `bingo_team_hokumpoke`;
-DROP TABLE IF EXISTS `bingo_team_hokumpoke_board_state`;
-DROP TABLE IF EXISTS `bingo_team_seczey`;
-DROP TABLE IF EXISTS `bingo_team_seczey_board_state`;
-DROP TABLE IF EXISTS `bingo_team_kyanize`;
-DROP TABLE IF EXISTS `bingo_team_kyanize_board_state`;
-DROP TABLE IF EXISTS `bingo_team_prime`;
-DROP TABLE IF EXISTS `bingo_team_prime_board_state`;
-DROP TABLE IF EXISTS `bingo_team_blepe`;
-DROP TABLE IF EXISTS `bingo_team_blepe_board_state`;
-DROP TABLE IF EXISTS `bingo_team_unphased`;
-DROP TABLE IF EXISTS `bingo_team_unphased_board_state`;
+DROP TABLE IF EXISTS `the_fat_woodcocks`;
+DROP TABLE IF EXISTS `the_fat_woodcocks_board_state`;
+DROP TABLE IF EXISTS `the_posture_inspectors`;
+DROP TABLE IF EXISTS `the_posture_inspectors_board_state`;
+DROP TABLE IF EXISTS `tfk`;
+DROP TABLE IF EXISTS `tfk_kyanize_board_state`;
+DROP TABLE IF EXISTS `the_real_world_traders`;
+DROP TABLE IF EXISTS `the_real_world_traders_board_state`;
+DROP TABLE IF EXISTS `bbbbb`;
+DROP TABLE IF EXISTS `bbbbb_board_state`;
+DROP TABLE IF EXISTS `phased_and_confused`;
+DROP TABLE IF EXISTS `phased_and_confusedd_board_state`;
 DROP TABLE IF EXISTS `completions`;
 DROP TABLE IF EXISTS `submissions`;
 
@@ -35,7 +35,7 @@ CREATE TABLE `tasks` (
 );
 
 INSERT INTO `tasks` VALUES
-(1,5,"Most cumulative beer brought during all task completions"),
+(1,5,"Most cumulative beer bought during all task completions"),
 (2,2,"Receive a non-prayer scroll purple unique from Chambers of Xeric (Buckler, DHCB, Dinh's, Ancestral, Dragon Claws, Elder Maul, Kodai, Twisted Bow, Kit, Dust, Pet)"),
 (3,3,"Obtain an Enhanced Crystal Weapon Seed"),
 (4,2,"Achieve 5,000,000 Woodcutting XP AND obtain a Fox Whistle"),
@@ -112,7 +112,7 @@ INSERT INTO `tasks` VALUES
 (75,5,"Achieve the most consecutive LMS wins. (Screenshots of each win with kc is required)"),
 (76,1,"Obtain a Venator Shard"),
 (77,3,"Complete a deathless, 5-man ToB with a maximum of 1 person from each bingo team"),
-(78,1,"Obtain a Kalphite Queen uniqe (Tattered head, Dragon pickaxe, pet, jar, dragon chainbody)"),
+(78,1,"Obtain a Kalphite Queen unique (Tattered head, Dragon pickaxe, pet, jar, dragon chainbody)"),
 (79,1,"Obtain a black mask"),
 (80,1,"Create a sword in Giant's Foundry with a score of 69"),
 (81,1,"Purchase the full Brimhaven Agility Arena Graceful recolour"),
@@ -136,14 +136,14 @@ CREATE TABLE `settings` (
 	`id` int
 );
 
-CREATE TABLE `bingo_team_hokumpoke` (
+CREATE TABLE `the_fat_woodcocks` (
 	`player_id` INT AUTO_INCREMENT NOT NULL,
     `player_name` VARCHAR(20) NOT NULL,
     `tasks_completed` INT DEFAULT 0,
     PRIMARY KEY(`player_id`)
 );
 
-CREATE TABLE `bingo_team_hokumpoke_board_state` (
+CREATE TABLE `the_fat_woodcocks_board_state` (
 	`task_id` INT AUTO_INCREMENT NOT NULL,
     `task_completion` BOOLEAN,
     `completed_by` VARCHAR(20),
@@ -152,7 +152,7 @@ CREATE TABLE `bingo_team_hokumpoke_board_state` (
     FOREIGN KEY(`task_id`) REFERENCES tasks(`task_id`)
 );
 
-INSERT INTO `bingo_team_hokumpoke_board_state` VALUES 
+INSERT INTO `the_fat_woodcocks_board_state` VALUES 
 (1, 0, "", null),
 (2, 0, "", null),
 (3, 0, "", null),
@@ -250,14 +250,14 @@ INSERT INTO `bingo_team_hokumpoke_board_state` VALUES
 (95, 0, "", null),
 (96, 0, "", null);
 
-CREATE TABLE `bingo_team_seczey` (
+CREATE TABLE `the_posture_inspectors` (
 	`player_id` INT AUTO_INCREMENT NOT NULL,
     `player_name` VARCHAR(20) NOT NULL,
     `tasks_completed` INT,
     PRIMARY KEY(`player_id`)
 );
 
-CREATE TABLE `bingo_team_seczey_board_state` (
+CREATE TABLE `the_posture_inspectors_board_state` (
 	`task_id` INT AUTO_INCREMENT NOT NULL,
     `task_completion` BOOLEAN,
     `completed_by` VARCHAR(20),
@@ -266,122 +266,7 @@ CREATE TABLE `bingo_team_seczey_board_state` (
     FOREIGN KEY(`task_id`) REFERENCES tasks(`task_id`)
 );
 
-INSERT INTO `bingo_team_seczey_board_state` VALUES 
-(1, 0, "", null),
-(2, 0, "", null),
-(3, 0, "", null),
-(4, 0, "", null),
-(5, 0, "", null),
-(6, 0, "", null),
-(7, 0, "", null),
-(8, 0, "", null),
-(9, 0, "", null),
-(10, 0, "", null),
-(11, 0, "", null),
-(12, 0, "", null),
-(13, 0, "", null),
-(14, 0, "", null),
-(15, 0, "", null),
-(16, 0, "", null),
-(17, 0, "", null),
-(18, 0, "", null),
-(19, 0, "", null),
-(20, 0, "", null),
-(21, 0, "", null),
-(22, 0, "", null),
-(23, 0, "", null),
-(24, 0, "", null),
-(25, 0, "", null),
-(26, 0, "", null),
-(27, 0, "", null),
-(28, 0, "", null),
-(29, 0, "", null),
-(30, 0, "", null),
-(31, 0, "", null),
-(32, 0, "", null),
-(33, 0, "", null),
-(34, 0, "", null),
-(35, 0, "", null),
-(36, 0, "", null),
-(37, 0, "", null),
-(38, 0, "", null),
-(39, 0, "", null),
-(40, 0, "", null),
-(41, 0, "", null),
-(42, 0, "", null),
-(43, 0, "", null),
-(44, 0, "", null),
-(45, 0, "", null),
-(46, 0, "", null),
-(47, 0, "", null),
-(48, 0, "", null),
-(49, 0, "", null),
-(50, 0, "", null),
-(51, 0, "", null),
-(52, 0, "", null),
-(53, 0, "", null),
-(54, 0, "", null),
-(55, 0, "", null),
-(56, 0, "", null),
-(57, 0, "", null),
-(58, 0, "", null),
-(59, 0, "", null),
-(60, 0, "", null),
-(61, 0, "", null),
-(62, 0, "", null),
-(63, 0, "", null),
-(64, 0, "", null),
-(65, 0, "", null),
-(66, 0, "", null),
-(67, 0, "", null),
-(68, 0, "", null),
-(69, 0, "", null),
-(70, 0, "", null),
-(71, 0, "", null),
-(72, 0, "", null),
-(73, 0, "", null),
-(74, 0, "", null),
-(75, 0, "", null),
-(76, 0, "", null),
-(77, 0, "", null),
-(78, 0, "", null),
-(79, 0, "", null),
-(80, 0, "", null),
-(81, 0, "", null),
-(82, 0, "", null),
-(83, 0, "", null),
-(84, 0, "", null),
-(85, 0, "", null),
-(86, 0, "", null),
-(87, 0, "", null),
-(88, 0, "", null),
-(89, 0, "", null),
-(90, 0, "", null),
-(91, 0, "", null),
-(92, 0, "", null),
-(93, 0, "", null),
-(94, 0, "", null),
-(95, 0, "", null),
-(96, 0, "", null);
-
-
-CREATE TABLE `bingo_team_kyanize` (
-	`player_id` INT AUTO_INCREMENT NOT NULL,
-    `player_name` VARCHAR(20) NOT NULL,
-    `tasks_completed` INT,
-    PRIMARY KEY(`player_id`)
-);
-
-CREATE TABLE `bingo_team_kyanize_board_state` (
-	`task_id` INT AUTO_INCREMENT NOT NULL,
-    `task_completion` BOOLEAN,
-    `completed_by` VARCHAR(20),
-    `completed_on` DATETIME,
-    PRIMARY KEY(`task_id`),
-    FOREIGN KEY(`task_id`) REFERENCES tasks(`task_id`)
-);
-
-INSERT INTO `bingo_team_kyanize_board_state` VALUES 
+INSERT INTO `the_posture_inspectors_board_state` VALUES 
 (1, 0, "", null),
 (2, 0, "", null),
 (3, 0, "", null),
@@ -480,14 +365,14 @@ INSERT INTO `bingo_team_kyanize_board_state` VALUES
 (96, 0, "", null);
 
 
-CREATE TABLE `bingo_team_prime` (
+CREATE TABLE `tfk` (
 	`player_id` INT AUTO_INCREMENT NOT NULL,
     `player_name` VARCHAR(20) NOT NULL,
     `tasks_completed` INT,
     PRIMARY KEY(`player_id`)
 );
 
-CREATE TABLE `bingo_team_prime_board_state` (
+CREATE TABLE `tfk_board_state` (
 	`task_id` INT AUTO_INCREMENT NOT NULL,
     `task_completion` BOOLEAN,
     `completed_by` VARCHAR(20),
@@ -496,7 +381,7 @@ CREATE TABLE `bingo_team_prime_board_state` (
     FOREIGN KEY(`task_id`) REFERENCES tasks(`task_id`)
 );
 
-INSERT INTO `bingo_team_prime_board_state` VALUES 
+INSERT INTO `tfk_board_state` VALUES 
 (1, 0, "", null),
 (2, 0, "", null),
 (3, 0, "", null),
@@ -595,14 +480,14 @@ INSERT INTO `bingo_team_prime_board_state` VALUES
 (96, 0, "", null);
 
 
-CREATE TABLE `bingo_team_blepe` (
+CREATE TABLE `the_real_world_traders` (
 	`player_id` INT AUTO_INCREMENT NOT NULL,
     `player_name` VARCHAR(20) NOT NULL,
     `tasks_completed` INT,
     PRIMARY KEY(`player_id`)
 );
 
-CREATE TABLE `bingo_team_blepe_board_state` (
+CREATE TABLE `the_real_world_traders_board_state` (
 	`task_id` INT AUTO_INCREMENT NOT NULL,
     `task_completion` BOOLEAN,
     `completed_by` VARCHAR(20),
@@ -611,7 +496,7 @@ CREATE TABLE `bingo_team_blepe_board_state` (
     FOREIGN KEY(`task_id`) REFERENCES tasks(`task_id`)
 );
 
-INSERT INTO `bingo_team_blepe_board_state` VALUES 
+INSERT INTO `the_real_world_traders_board_state` VALUES 
 (1, 0, "", null),
 (2, 0, "", null),
 (3, 0, "", null),
@@ -710,14 +595,129 @@ INSERT INTO `bingo_team_blepe_board_state` VALUES
 (96, 0, "", null);
 
 
-CREATE TABLE `bingo_team_unphased` (
+CREATE TABLE `bbbbb` (
 	`player_id` INT AUTO_INCREMENT NOT NULL,
     `player_name` VARCHAR(20) NOT NULL,
     `tasks_completed` INT,
     PRIMARY KEY(`player_id`)
 );
 
-CREATE TABLE `bingo_team_unphased_board_state` (
+CREATE TABLE `bbbbb_board_state` (
+	`task_id` INT AUTO_INCREMENT NOT NULL,
+    `task_completion` BOOLEAN,
+    `completed_by` VARCHAR(20),
+    `completed_on` DATETIME,
+    PRIMARY KEY(`task_id`),
+    FOREIGN KEY(`task_id`) REFERENCES tasks(`task_id`)
+);
+
+INSERT INTO `bbbbb_board_state` VALUES 
+(1, 0, "", null),
+(2, 0, "", null),
+(3, 0, "", null),
+(4, 0, "", null),
+(5, 0, "", null),
+(6, 0, "", null),
+(7, 0, "", null),
+(8, 0, "", null),
+(9, 0, "", null),
+(10, 0, "", null),
+(11, 0, "", null),
+(12, 0, "", null),
+(13, 0, "", null),
+(14, 0, "", null),
+(15, 0, "", null),
+(16, 0, "", null),
+(17, 0, "", null),
+(18, 0, "", null),
+(19, 0, "", null),
+(20, 0, "", null),
+(21, 0, "", null),
+(22, 0, "", null),
+(23, 0, "", null),
+(24, 0, "", null),
+(25, 0, "", null),
+(26, 0, "", null),
+(27, 0, "", null),
+(28, 0, "", null),
+(29, 0, "", null),
+(30, 0, "", null),
+(31, 0, "", null),
+(32, 0, "", null),
+(33, 0, "", null),
+(34, 0, "", null),
+(35, 0, "", null),
+(36, 0, "", null),
+(37, 0, "", null),
+(38, 0, "", null),
+(39, 0, "", null),
+(40, 0, "", null),
+(41, 0, "", null),
+(42, 0, "", null),
+(43, 0, "", null),
+(44, 0, "", null),
+(45, 0, "", null),
+(46, 0, "", null),
+(47, 0, "", null),
+(48, 0, "", null),
+(49, 0, "", null),
+(50, 0, "", null),
+(51, 0, "", null),
+(52, 0, "", null),
+(53, 0, "", null),
+(54, 0, "", null),
+(55, 0, "", null),
+(56, 0, "", null),
+(57, 0, "", null),
+(58, 0, "", null),
+(59, 0, "", null),
+(60, 0, "", null),
+(61, 0, "", null),
+(62, 0, "", null),
+(63, 0, "", null),
+(64, 0, "", null),
+(65, 0, "", null),
+(66, 0, "", null),
+(67, 0, "", null),
+(68, 0, "", null),
+(69, 0, "", null),
+(70, 0, "", null),
+(71, 0, "", null),
+(72, 0, "", null),
+(73, 0, "", null),
+(74, 0, "", null),
+(75, 0, "", null),
+(76, 0, "", null),
+(77, 0, "", null),
+(78, 0, "", null),
+(79, 0, "", null),
+(80, 0, "", null),
+(81, 0, "", null),
+(82, 0, "", null),
+(83, 0, "", null),
+(84, 0, "", null),
+(85, 0, "", null),
+(86, 0, "", null),
+(87, 0, "", null),
+(88, 0, "", null),
+(89, 0, "", null),
+(90, 0, "", null),
+(91, 0, "", null),
+(92, 0, "", null),
+(93, 0, "", null),
+(94, 0, "", null),
+(95, 0, "", null),
+(96, 0, "", null);
+
+
+CREATE TABLE `phased_and_confused` (
+	`player_id` INT AUTO_INCREMENT NOT NULL,
+    `player_name` VARCHAR(20) NOT NULL,
+    `tasks_completed` INT,
+    PRIMARY KEY(`player_id`)
+);
+
+CREATE TABLE `phased_and_confused_board_state` (
 	`task_id` INT AUTO_INCREMENT NOT NULL,
     `task_completion` BOOLEAN,
     `completed_by` VARCHAR(20),
@@ -726,7 +726,7 @@ CREATE TABLE `bingo_team_unphased_board_state` (
     FOREIGN KEY(`task_id`) REFERENCES tasks(`task_id`)
 );
 
-INSERT INTO `bingo_team_unphased_board_state` VALUES 
+INSERT INTO `phased_and_confused_board_state` VALUES 
 (1, 0, "", null),
 (2, 0, "", null),
 (3, 0, "", null),
@@ -837,7 +837,9 @@ CREATE TABLE `completions` (
 CREATE TABLE `submissions` (
 	`submission_id` INT AUTO_INCREMENT,
     `task_id` INT NOT NULL,
-    `img_url` VARCHAR(400) NOT NULL,
+    `img_url` VARCHAR(500) NOT NULL,
+    `channel_id` VARCHAR(30) NOT NULL,
+    `message_id` VARCHAR(30) NOT NULL,
     `player` VARCHAR(20) NOT NULL,
     `team` VARCHAR(20) NOT NULL,
     `date_submitted` DATETIME NOT NULL,

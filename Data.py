@@ -1,8 +1,6 @@
-from enum import Enum
-
 # Dict of bingo tasks
 task_list = {
-    1: "[5 points] Most cumulative beer brought during all task completions",
+    1: "[5 points] Most cumulative beer bought during all task completions",
     2: "[2 points] Receive a non-prayer scroll purple unique from Chambers of Xeric (Buckler, DHCB, Dinh's, Ancestral, Dragon Claws, Elder Maul, Kodai, Twisted Bow, Kit, Dust, Pet)",
     3: "[3 points] Obtain an Enhanced Crystal Weapon Seed",
     4: "[2 points] Achieve 5,000,000 Woodcutting XP AND obtain a Fox Whistle",
@@ -79,7 +77,7 @@ task_list = {
     75: "[5 points] Achieve the most consecutive LMS wins. (Screenshots of each win with kc is required)",
     76: "[1 point] Obtain a Venator Shard",
     77: "[3 points] Complete a deathless, 5-man ToB with a maximum of 1 person from each bingo team",
-    78: "[1 point] Obtain a Kalphite Queen uniqe (Tattered head, Dragon pickaxe, pet, jar, dragon chainbody)",
+    78: "[1 point] Obtain a Kalphite Queen unique (Tattered head, Dragon pickaxe, pet, jar, dragon chainbody)",
     79: "[1 point] Obtain a black mask",
     80: "[1 point] Create a sword in Giant's Foundry with a score of 69",
     81: "[1 point] Purchase the full Brimhaven Agility Arena Graceful recolour",
@@ -305,4 +303,18 @@ player_titles_dict = {
     101: "Saucy",
     102: "Sarcastic",
     103: "Witty",
+}
+
+# Bot submission responses
+submission_responses = {
+    1: "DID YOU REMEMBER YOUR CODEWORD?",
+    2: "REALLY? THIS IS YOUR SUBMISSION? ARE YOU SURE?",
+    3: "YOU'RE THE FIRST PERSON TO SUBMIT THIS! PROBABLY. MAYBE.",
+    4: "ABOUT TIME.",
+    5: "FINALLY!",
+    6: "ARE YOU WAITING FOR A TIP? GO AWAY.",
+    7: "CONGRATS [USER] FOR YOUR DROP/ACHIEVEMENT/THING!",
+    8: "FOKI ALREADY HAS ONE OF THESE, SO...",
+    9: "TOOK YA LONG ENOUGH!",
+    10: "FUCK YOU DJ",
 }

@@ -25,7 +25,7 @@ async def task_complete(team: str, task: int, player: str):
     update_completions_query = f"INSERT INTO completions (team, player, task, date) VALUES ('{team}', '{player}', {task}, '{d}');"
     print("MYSQL: Sending query -> " + update_completions_query)
     
-    increase_completions(connection, team, player)
+    await increase_completions(connection, team, player)
     
     connection.cursor().execute(update_task_completion_query)
     connection.cursor().execute(update_completions_query)
@@ -34,11 +34,11 @@ async def task_complete(team: str, task: int, player: str):
     connection.close()
     return
     
-async def add_submission(task: int, url: str, player: str, team: str):
+async def add_submission(task: int, url: str, player: str, team: str, channel_id, message_id):
     connection = await connect_to_db()
     d = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    add_submission_query = f"INSERT INTO submissions (task_id, img_url, player, team, date_submitted) VALUES ({task}, '{url}', '{player}', '{team}', '{d}');"
+    add_submission_query = f"INSERT INTO submissions (task_id, img_url, channel_id, message_id, player, team, date_submitted) VALUES ({task}, '{url}', {channel_id}, {message_id}, '{player}', '{team}', '{d}');"
     print("MYSQL: Sending query -> " + add_submission_query)
     
     connection.cursor().execute(add_submission_query)
@@ -58,6 +58,29 @@ async def remove_submission(task: int, team: str):
     
     connection.close()
     return
+
+async def remove_submission(submission_id: int):
+    connection = await connect_to_db()
+    
+    remove_submission_query = f"DELETE FROM submissions WHERE submission_id = {submission_id};"
+    print("MYSQL: Sending query -> " + remove_submission_query)
+    
+    connection.cursor().execute(remove_submission_query)
+    connection.commit()
+    
+    connection.close()
+    return
+
+async def get_submissions():
+    connection = await connect_to_db()
+    
+    get_submissions_query = f"SELECT * FROM submissions;"
+    print("MYSQL: Sending query -> " + get_submissions_query)
+    cursor = connection.cursor()
+    cursor.execute(get_submissions_query)
+    return_list = cursor.fetchall()    
+    connection.close()
+    return return_list
     
 async def increase_completions(connection, team: str, player: str):
     

@@ -1,11 +1,7 @@
 from __future__ import annotations
 import discord
-import logging
-import typing
 from discord.interactions import Interaction
-from discord.ui import View
-
-from Data import task_list
+import discord.ui
 
 # TODO: show only non-completed tasks
 
@@ -37,7 +33,7 @@ class Tasks(discord.ui.View):
     
     async def send(self, ctx):
         self.message = await ctx.send(view = self)
-        await self.update_message(self.data[:self.separator])
+        await self.update_message(self.data)
     
     def create_embed(self, data):        
         embed = discord.Embed(title="Battle Bingo Task List")
