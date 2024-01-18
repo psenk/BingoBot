@@ -19,6 +19,9 @@ DROP TABLE IF EXISTS `submissions`;
 DROP TABLE IF EXISTS `team_test`;
 DROP TABLE IF EXISTS `team_test_board_state`;
 DROP TABLE IF EXISTS `test_completions`;
+DROP TABLE IF EXISTS `test_submissions`;
+
+DROP TABLE IF EXISTS `settings`;
 
 DROP TABLE IF EXISTS `tasks`;
 
@@ -128,6 +131,10 @@ INSERT INTO `tasks` VALUES
 (94,1,"BONUS: Get a 99"),
 (95,1,"BONUS: PK over 100m to someone not in clan, not in deathmatch. Just a good ol fashioned wildy PK."),
 (96,1,"BONUS: Get sasa to say \"I love you\".");
+
+CREATE TABLE `settings` (
+	`id` int
+);
 
 CREATE TABLE `bingo_team_hokumpoke` (
 	`player_id` INT AUTO_INCREMENT NOT NULL,
@@ -830,7 +837,7 @@ CREATE TABLE `completions` (
 CREATE TABLE `submissions` (
 	`submission_id` INT AUTO_INCREMENT,
     `task_id` INT NOT NULL,
-    `img_url` VARCHAR(200) NOT NULL,
+    `img_url` VARCHAR(400) NOT NULL,
     `player` VARCHAR(20) NOT NULL,
     `team` VARCHAR(20) NOT NULL,
     `date_submitted` DATETIME NOT NULL,
@@ -840,14 +847,14 @@ CREATE TABLE `submissions` (
 
 --- TESTING
 
-CREATE TABLE `bingo_team_test` (
+CREATE TABLE `team_test` (
 	`player_id` INT AUTO_INCREMENT NOT NULL,
     `player_name` VARCHAR(20) NOT NULL,
     `tasks_completed` INT,
     PRIMARY KEY(`player_id`)
 );
 
-CREATE TABLE `bingo_team_test_board_state` (
+CREATE TABLE `team_test_board_state` (
 	`task_id` INT AUTO_INCREMENT NOT NULL,
     `task_completion` BOOLEAN,
     `completed_by` VARCHAR(20),
@@ -856,7 +863,7 @@ CREATE TABLE `bingo_team_test_board_state` (
     FOREIGN KEY(`task_id`) REFERENCES tasks(`task_id`)
 );
 
-INSERT INTO `bingo_team_test_board_state` VALUES 
+INSERT INTO `team_test_board_state` VALUES 
 (1, 0, "", null),
 (2, 0, "", null),
 (3, 0, "", null),
@@ -954,7 +961,7 @@ INSERT INTO `bingo_team_test_board_state` VALUES
 (95, 0, "", null),
 (96, 0, "", null);
 
-CREATE TABLE `bingo_test_completions` (
+CREATE TABLE `test_completions` (
 	`item_id` INT AUTO_INCREMENT NOT NULL,
     `team` VARCHAR(100) NOT NULL,
     `player` VARCHAR(20) NOT NULL,
@@ -962,4 +969,15 @@ CREATE TABLE `bingo_test_completions` (
     `date` DATETIME,
     PRIMARY KEY (`item_id`),
     FOREIGN KEY (`task`) REFERENCES tasks(`task_id`)
+);
+
+CREATE TABLE `test_submissions` (
+	`submission_id` INT AUTO_INCREMENT,
+    `task_id` INT NOT NULL,
+    `img_url` VARCHAR(400) NOT NULL,
+    `player` VARCHAR(20) NOT NULL,
+    `team` VARCHAR(20) NOT NULL,
+    `date_submitted` DATETIME NOT NULL,
+    PRIMARY KEY (`submission_id`),
+    FOREIGN KEY (`task_id`) REFERENCES tasks(`task_id`)
 );
