@@ -1,9 +1,11 @@
 discord.log
 .vscode
 .env
+__pycache__/*
 __pycache__
 service_account.json
 poetry.lock
 pyproject.toml
 README.md
 static
+fly.toml
