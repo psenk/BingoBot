@@ -21,9 +21,9 @@ async def task_complete(team: str, task: int, player: str):
     
     team_board = f"{team_snip}_board_state"
     update_task_completion_query = f"UPDATE {team_board} SET task_completion = 1, completed_by = '{player}', completed_on = '{d}' WHERE task_id = {task};"
-    print("MYSQL: Sending query -> " + update_task_completion_query)
+    print("MYSQL: Updating Team Board State -> " + update_task_completion_query)
     update_completions_query = f"INSERT INTO completions (team, player, task, date) VALUES ('{team}', '{player}', {task}, '{d}');"
-    print("MYSQL: Sending query -> " + update_completions_query)
+    print("MYSQL: Updating Completions (logs) -> " + update_completions_query)
     
     await increase_completions(connection, team, player)
     
@@ -39,7 +39,7 @@ async def add_submission(task: int, url: str, player: str, team: str, channel_id
     d = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     add_submission_query = f"INSERT INTO submissions (task_id, img_url, channel_id, message_id, player, team, date_submitted) VALUES ({task}, '{url}', {channel_id}, {message_id}, '{player}', '{team}', '{d}');"
-    print("MYSQL: Sending query -> " + add_submission_query)
+    print("MYSQL: Adding Submission -> " + add_submission_query)
     
     connection.cursor().execute(add_submission_query)
     connection.commit()
@@ -51,7 +51,7 @@ async def remove_submission(task: int, team: str):
     connection = await connect_to_db()
     
     remove_submission_query = f"DELETE FROM submissions WHERE (task_id = {task} AND team = '{team}');"
-    print("MYSQL: Sending query -> " + remove_submission_query)
+    print("MYSQL: Removing Submission -> " + remove_submission_query)
     
     connection.cursor().execute(remove_submission_query)
     connection.commit()
@@ -63,7 +63,7 @@ async def remove_submission(submission_id: int):
     connection = await connect_to_db()
     
     remove_submission_query = f"DELETE FROM submissions WHERE submission_id = {submission_id};"
-    print("MYSQL: Sending query -> " + remove_submission_query)
+    print("MYSQL: Deleting Submission -> " + remove_submission_query)
     
     connection.cursor().execute(remove_submission_query)
     connection.commit()
@@ -75,7 +75,7 @@ async def get_submissions():
     connection = await connect_to_db()
     
     get_submissions_query = f"SELECT * FROM submissions;"
-    print("MYSQL: Sending query -> " + get_submissions_query)
+    print("MYSQL: Getting All Submissions -> " + get_submissions_query)
     cursor = connection.cursor()
     cursor.execute(get_submissions_query)
     return_list = cursor.fetchall()    
@@ -88,7 +88,7 @@ async def increase_completions(connection, team: str, player: str):
     
     # is player in table?
     team_list_query = f"SELECT * FROM {team_snip} WHERE player_name = '{player}';"  
-    print("MYSQL: Sending query -> " + team_list_query)
+    print("MYSQL: Getting Player -> " + team_list_query)
     cursor = connection.cursor()
     cursor.execute(team_list_query)
     team_list = cursor.fetchall()
@@ -96,20 +96,20 @@ async def increase_completions(connection, team: str, player: str):
     
     if len(team_list) == 0:
         new_player_query = f"INSERT INTO {team_snip} (player_name, tasks_completed) VALUES ('{player}', 1);"
-        print("MYSQL: Sending query -> " + new_player_query)
+        print("MYSQL: Increasing New Player Task Completions -> " + new_player_query)
         cursor = connection.cursor()
         cursor.execute(new_player_query)
         
     else:
         old_value_query = f"SELECT tasks_completed FROM {team_snip} WHERE player_name = '{player}';"
-        print("MYSQL: Sending query -> " + old_value_query)
+        print("MYSQL: Getting Old Player Task Completions -> " + old_value_query)
         cursor1 = connection.cursor()
         cursor1.execute(old_value_query)
         (old_value,) = cursor1.fetchone()
         
         cursor2 = connection.cursor()        
         old_player_query = f"UPDATE {team_snip} SET tasks_completed = {int(old_value) + 1} WHERE player_name = '{player}';"
-        print("MYSQL: Sending query -> " + old_player_query)
+        print("MYSQL: Increasing Old Player Task Completions -> " + old_player_query)
         cursor2.execute(old_player_query)
     
     connection.commit()

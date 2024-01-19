@@ -6,13 +6,13 @@ DROP TABLE IF EXISTS `the_fat_woodcocks_board_state`;
 DROP TABLE IF EXISTS `the_posture_inspectors`;
 DROP TABLE IF EXISTS `the_posture_inspectors_board_state`;
 DROP TABLE IF EXISTS `tfk`;
-DROP TABLE IF EXISTS `tfk_kyanize_board_state`;
+DROP TABLE IF EXISTS `tfk_board_state`;
 DROP TABLE IF EXISTS `the_real_world_traders`;
 DROP TABLE IF EXISTS `the_real_world_traders_board_state`;
 DROP TABLE IF EXISTS `bbbbb`;
 DROP TABLE IF EXISTS `bbbbb_board_state`;
 DROP TABLE IF EXISTS `phased_and_confused`;
-DROP TABLE IF EXISTS `phased_and_confusedd_board_state`;
+DROP TABLE IF EXISTS `phased_and_confused_board_state`;
 DROP TABLE IF EXISTS `completions`;
 DROP TABLE IF EXISTS `submissions`;
 
