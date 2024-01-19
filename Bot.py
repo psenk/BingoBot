@@ -1,22 +1,17 @@
 import discord
 from discord.ext import commands
-from discord.ui import View
 import random
 import logging
 import datetime
 import os
-import gspread
 from dotenv import load_dotenv
-import wom
-from wom import CompetitionStatus
-import mysql.connector
 
 load_dotenv()
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-import uuid
+import wom
+from wom import CompetitionStatus
 
 from Tasks import Tasks
+from ApproveTasks import ApproveTasks
 from Data import *
 import Queries
 
@@ -41,21 +36,30 @@ TEST_WEBHOOK_USER_ID = 1194889597738549298
 BINGO_GENERAL_CHANNEL = 1193039460980502578
 BINGO_TEST_CHANNEL = 1195530905398284348
 WEBHOOK_USER_ID = 1195911136021852191
-# BINGO_SUBMISSIONS_CHANNEL =
-# BINGO_WEBHOOK_USER_ID =
 # DISCORD TEAM ROLES (IDS: NAMES)
 GENERAL_BINGO_ROLE = 1196183580615909446
 BINGO_TEAM_ROLES = {
-    1196180292742951003: "Bingo Team Hokumpoke",
-    1196182424913199217: "Bingo Team Seczey",
-    1196182816099152013: "Bingo Team Kyanize",
-    1196183381931720796: "Bingo Team ItsOnlyPrime",
-    1196183533308358696: "Bingo Team Blepe",
-    1196916756384600074: "Bingo Team Unphased",
+    1196180292742951003: "The Fat Woodcocks",
+    1196182424913199217: "The Posture Inspectors",
+    1196182816099152013: "TFK",
+    1196183381931720796: "The Real World Traders",
+    1196183533308358696: "BBBBB",
+    1196916756384600074: "Phased and Confused",
     # For testing
     1195556259160666172: "Team Test",
 }
+BINGO_TEAM_CHANNELS = {
+    "The Fat Woodcocks": 1,
+    "The Posture Inspectors": 2,
+    "TFK": 3,
+    "The Real World Traders": 4,
+    "BBBBB": 5,
+    "Phased and Confused": 6,
+}
 CAPTAIN_ROLE = 1195584494636384321
+# foki, me
+ADMIN_RIGHTS = [453652490274078720, 545728431917236226]
+# ADMIN_RIGHTS = [545728431917236226]
 # URLs & MESSAGES
 EMBED_ICON_URL = "https://shorturl.at/wGOXY"
 RULES_POST_URL = "https://discord.com/channels/741153043776667658/1193039460980502578/1193042254751879218"
@@ -69,33 +73,12 @@ RULES_POST_MSG = 1193042254751879218
 intents = discord.Intents.all()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!bingo", intents=intents)
-gc = gspread.service_account(filename="service_account.json")
 wom_client = wom.Client()
 # TEST
 handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
 
-# MAPS
-map_of_submissions = {}
-map_of_embeds = {}
-map_of_embed_messages = {}
-# id : task #
-live_submissions = {}
-
-# CUSTOMIZATION
-submission_responses = {
-    1: "DID YOU REMEMBER YOUR CODEWORD?",
-    2: "REALLY? THIS IS YOUR SUBMISSION? ARE YOU SURE?",
-    3: "YOU'RE THE FIRST PERSON TO SUBMIT THIS! PROBABLY. MAYBE.",
-    4: "ABOUT TIME.",
-    5: "FINALLY!",
-    6: "ARE YOU WAITING FOR A TIP? GO AWAY.",
-    7: "CONGRATS [USER] FOR YOUR DROP/ACHIEVEMENT/THING!",
-    8: "FOKI ALREADY HAS ONE OF THESE, SO...",
-    9: "TOOK YA LONG ENOUGH!",
-    10: "FUCK YOU DJ",
-}
-
 # MISC
+tasks_revealed = 9
 
 #
 # BOT COMMANDS
@@ -109,7 +92,6 @@ submission_responses = {
 # TODO: SAVE THE DATA!! reboot from save command?  save data manually command?
 # TODO: submit multiple photos at once
 # TODO: "who called what" command logs?
-# TODO: Google API - HTML template
 # TODO: divide code into packaged files
 # TODO: write bot start-up batch script
 # TODO: match team color to profile embed, or random colors
@@ -121,16 +103,12 @@ submission_responses = {
 # For testing purposes
 @bot.command()
 async def test(ctx):
-
-
-    # make custom embed for submissions?
     return
 
 
 # GLOBAL COMMANDS
 # "!bingowhen" command
 # Ping pong
-# TESTED GOOD
 @bot.command()
 async def when(ctx):
     await ctx.channel.send("👀")
@@ -151,7 +129,6 @@ async def quit(ctx):
 
 # "!bingoinfo" command
 # Displays information about the bingo event
-# TESTED GOOD
 @bot.command()
 async def info(ctx):
     bingo_info_embed = discord.Embed(
@@ -184,12 +161,14 @@ async def info(ctx):
     )
     bingo_info_embed.add_field(name="", value="Watch for a Discord ping!", inline=False)
     bingo_info_embed.add_field(name="", value="", inline=False)
-    bingo_info_embed.add_field(name="Team Poop", value="Captain: Hokumpoke")
-    bingo_info_embed.add_field(name="Team Not Poop", value="Captain: Kyanize")
-    bingo_info_embed.add_field(name="Team Poop", value="Captain: Seczey")
-    bingo_info_embed.add_field(name="Team Poop", value="Captain: ItsOnlyPrime")
-    bingo_info_embed.add_field(name="Team Poop", value="Captain: Blepe")
-    bingo_info_embed.add_field(name="Team Poop", value="Captain: Unphased")
+    bingo_info_embed.add_field(name="The Fat Woodcocks", value="Captain: Hokumpoke")
+    bingo_info_embed.add_field(name="The Posture Inspectors", value="Captain: Seczey")
+    bingo_info_embed.add_field(name="TFK", value="Captain: Kyanize")
+    bingo_info_embed.add_field(
+        name="The Real World Traders", value="Captain: ItsOnlyPrime"
+    )
+    bingo_info_embed.add_field(name="BBBBB", value="Captain: Blepe")
+    bingo_info_embed.add_field(name="Phased and Confused", value="Captain: Unphased")
 
     await ctx.send(embed=bingo_info_embed)
     return
@@ -198,7 +177,6 @@ async def info(ctx):
 # "!bingome" command
 # Displays custom bingo player profile card in an embed
 # TODO: Track amount of posts in general channel as smack talk stat
-# TESTED GOOD
 @bot.command()
 async def me(ctx):
     global player_titles_dict
@@ -285,6 +263,10 @@ async def menu(ctx):
     bingo_info_embed.add_field(
         name="!bingosubmit",
         value="UNDER CONSTRUCTION DO NOT USE\nTile Submission Tool, used to submit your tile completion screenshots.",
+    )
+    bingo_info_embed.add_field(
+        name="!bingoapprove",
+        value="ADMIN USE ONLY.  Approve submissions.",
     )
 
     await ctx.send(embed=bingo_info_embed)
@@ -387,17 +369,19 @@ async def rules(ctx):
 # CHANNEL SPECIFIC COMMANDS
 
 
-# "!bingosubmit" command
+# "!bingosubmit int" command
 # Tile Submition Tool
 # Takes attachments from message, sends to Google Doc for verification
+# int - task number
 # Data about the interaction is used for recognizing submissions
-# TODO: IMPORTANT---Data persistance
 @bot.command()
 async def submit(ctx, task: int):
     if task > len(task_list) or task <= 0:
         ctx.send("Task number out of bounds.")
 
     # TODO: IMPORTANT---switch before going live
+    # TODO: Check for submission in correct team channel
+    # TODO: Is task already completed?
     # Targeting submissions in a specific channel
     # To prevent spam in rest of server
     if ctx.channel != bot.get_channel(
@@ -412,10 +396,6 @@ async def submit(ctx, task: int):
     if ctx.message.attachments:
         for attachment in ctx.message.attachments:
             if attachment.filename.endswith((".png", ".jpg", ".jpeg", ".gif")):
-                # Making submission id
-                id = str(uuid.uuid4())
-                # Map of id : messages
-                map_of_submissions[id] = ctx.message
 
                 # Confirmation window
                 toPost = await post(ctx, attachment.url, task)
@@ -423,38 +403,69 @@ async def submit(ctx, task: int):
                     return
 
                 await ctx.send(
-                    "I will take your submission to Bingo Overlord Foki for review."
+                    "Your submission has been sent to Bingo Overlord Foki for review."
                 )
-
-                # Posting to Google Docs/Sheets
-                await post_bingo_submission(attachment.url, id, task)
 
                 # Updating database
                 await Queries.add_submission(
-                    task, attachment.url, ctx.author.display_name, team
+                    task,
+                    attachment.url,
+                    ctx.author.display_name,
+                    team,
+                    ctx.channel.id,
+                    ctx.message.id,
                 )
-
-                # Updating Google sheets
-                await update_team_sheet(team, task, ctx.author.display_name, 1)
 
                 # snarky options if desired
                 # bot_response = random.randint(1, 10)
                 # await message.channel.send(submission_responses_dict[bot_response])
 
                 # posting logs to #logs channel
-                await submission_alert(ctx, id)
+                await submission_alert(ctx, team)
+                # LOG
+                print("Foki Bot: Captain, we've received a bingo submission.")
 
             # Submission screenshot is the wrong file type
             else:
-                await ctx.channel.send(
+                await ctx.send(
                     "The file type you have submitted is not supported.  Please use .png, .jpg, .jpeg, or .gif."
                 )
 
     # No attachment on message
     else:
-        await ctx.channel.send(
+        await ctx.send(
             "There was no attachment on that post. Your submission has been rejected."
         )
+    return
+
+
+"""
+Creates embed of all current submissions for admin approval
+"""
+
+
+# "!bingoapprove" command
+# For approving submissions
+# ADMIN USE ONLY
+# TODO: add admin specific logic
+@bot.command()
+async def approve(ctx):
+    if ctx.author.id not in ADMIN_RIGHTS:
+        await ctx.send("You are not authorized to use this command.")
+        return
+    if (
+        ctx.channel.id != BINGO_TEST_CHANNEL
+        and ctx.channel.id != TEST_SUBMISSIONS_CHANNEL
+    ):
+        await ctx.send("This command is not authorized for use in this channel.")
+        return
+
+    submissions = await Queries.get_submissions()
+
+    view = ApproveTasks(ctx)
+    view.data = submissions
+
+    await view.send(True)
     return
 
 
@@ -463,236 +474,29 @@ async def submit(ctx, task: int):
 #
 
 """
-Connects to Google API
-CREDENTIALS_PATH - path to service account credentials .json file
-SCOPES - scopes at Google required by the bot
-returns Google Docs service object
-"""
-
-
-# done
-async def connect_to_google():
-    CREDENTIALS_PATH = "service_account.json"
-    SCOPES = [
-        "https://www.googleapis.com/auth/documents",
-        "https://www.googleapis.com/auth/drive",
-    ]
-
-    credentials = service_account.Credentials.from_service_account_file(
-        CREDENTIALS_PATH, scopes=SCOPES
-    )
-    # Different build required per service (sheets, docs, etc.)
-    service = build("docs", "v1", credentials=credentials)
-
-    # LOG
-    print(
-        "{0.user.display_name}: Captain, we've opened an encrypted communications link with Starfleet's Google API division.".format(
-            bot
-        )
-    )
-    return service
-
-
-"""
-Posts image to Google Doc
-image_url - URL of image to be posted
-id - UUID associated with submission
-GOOGLE_DOCS_KEY - key to the specific Google Doc desired
-Document is updated by sending HTTP requests to the Google service
-Each request is a specific function (insertInlineImage, insertText, etc.)
-With index 1, all requests appear at top of page (so should be posted in reverse order)
-"""
-
-
-# done
-async def post_bingo_submission(image_url, id, task: int):
-    global live_submissions
-
-    service = await connect_to_google()
-    trimmedId = id[:8]
-
-    live_submissions[trimmedId] = task
-
-    # adding image to document via HTTP requests
-    # creating each request
-    insert_image = [{"insertInlineImage": {"location": {"index": 1}, "uri": image_url}}]
-    insert_text = [
-        {"insertText": {"location": {"index": 1}, "text": "{0}\n".format(id)}}
-    ]
-    insert_page_break = [{"insertPageBreak": {"location": {"index": 1}}}]
-
-    # posting requests to Google
-    update_1 = (
-        service.documents()
-        .batchUpdate(documentId=GOOGLE_DOCS_KEY, body={"requests": insert_page_break})
-        .execute()
-    )
-    update_2 = (
-        service.documents()
-        .batchUpdate(documentId=GOOGLE_DOCS_KEY, body={"requests": insert_text})
-        .execute()
-    )
-    update_3 = (
-        service.documents()
-        .batchUpdate(documentId=GOOGLE_DOCS_KEY, body={"requests": insert_image})
-        .execute()
-    )
-
-    # LOG
-    print(
-        "{0.user.display_name}: Captain, the maintenance crew have a payload ready to go.  Sending via encrypted communications.".format(
-            bot
-        )
-    )
-    print("Transmited: Submission # {0}".format(trimmedId))
-    service.close()
-
-
-"""
 Posts embed message to specific Discord channel with submission information
 message - Discord message object
 id - Submission UUID
 BINGO_TEST_CHANNEL - Discord channel to post message to (channel ID)
-
 """
 
 
 # done
-async def submission_alert(ctx, id):
-    global map_of_embed_messages, map_of_embeds
-
-    trimmedId = id[:8]
-    d = datetime.datetime.now()
-    # TODO: IMPORTANT---Switch to proper channel at launch
+async def submission_alert(ctx, team: str):
+    d = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # TODO: IMPORTANT---Switch to proper LOGS channel at launch
     channel = await bot.fetch_channel(BINGO_TEST_CHANNEL)
-    # channel = ctx.channel
 
-    # Creating the custom embed to track the submission
     submission_embed = discord.Embed(
-        title=f"Submission #\n{trimmedId}", url=ctx.message.jump_url, color=0x0A0AAB
+        title=f"Submission Received", url=ctx.message.jump_url, color=0xFF0000
     )
-    submission_embed.set_author(
-        name=ctx.author.display_name, icon_url=ctx.author.display_avatar
-    )
-    submission_embed.set_thumbnail(
-        url=ctx.message.attachments[0].url
-    )  # is .url needed here?
-    submission_embed.add_field(name="Posted on: \n", value=d.strftime("%B %d %X"))
+    submission_embed.set_thumbnail(url=EMBED_ICON_URL)
+    submission_embed.add_field(name="Team:", value=team)
+    submission_embed.add_field(name="Player:", value=ctx.author.display_name)
+    submission_embed.add_field(name="Approved on:", value=d)
 
     # Posting embed the custom embed
-    embed_message = await channel.send(embed=submission_embed)
-
-    # saving new message and the custom embed for later operations
-    map_of_embed_messages[id] = embed_message
-    map_of_embeds[id] = submission_embed
-
-
-"""
-Approves submission by looking for a thumbs up message from the Google API
-message - Discord message object
-BINGO_TEST_CHANNEL - Discord channel to post message to (channel ID)
-Splices the UUID out of the message, uses as key to retrieve specific embed and embed message.
-Updates embed with approval time, deletes old post, creates new post.
-"""
-
-# TODO: THIS ISNT WORKING
-# done
-async def approve(message):
-    global map_of_submissions, map_of_embed_messages, live_submissions
-
-    id = message.content.split()[5]
-    trimmedId = id[:8]
-    d = datetime.datetime.now()
-
-    # TODO: IMPORTANT---change to production channel before launch
-    channel = await bot.fetch_channel(BINGO_TEST_CHANNEL)
-    emoji = "✅"
-
-    submission = map_of_submissions.get(id)
-    # bot adds reaction to submission post to show approval
-    await submission.add_reaction(emoji)
-    author = submission.author.display_name
-    task = live_submissions.get(trimmedId)
-    team, isCaptain = await find_bingo_team(submission.author)
-    await update_team_sheet(team, task, author, 2)
-
-    # Updating database
-    await Queries.task_complete(team, task, author)
-    await Queries.remove_submission(task, team)
-
-    embed = map_of_embeds.get(id)
-    embed_message = map_of_embed_messages.get(id)
-    embed.add_field(name="Approved on:", value=d.strftime("%B %d %X"))
-
-    # LOG
-    print(
-        "{0.user.display_name}: Captain, payload ID # {1} has been approved.  Department head has been notified".format(
-            bot, trimmedId
-        )
-    )
-
-    await embed_message.delete()
-    await channel.send(embed=embed)
-
-
-"""
-Approves submission by looking for a thumbs up message from the Google API
-message - Discord message object
-TEST_LOGS_CHANNEL - Discord channel to post message to (channel ID)
-Splices the UUID out of the message, uses as key to retrieve specific embed and embed message.
-Updates embed with approval time, deletes old post, creates new post.
-"""
-
-
-# done
-async def deny(message):
-    global map_of_submissions, map_of_embed_messages, live_submissions
-
-    id = message.content.split()[5]
-    trimmedId = id[:8]
-    d = datetime.datetime.now()
-
-    # TODO: IMPORTANT---switch to correct channel when going live
-    channel = await bot.fetch_channel(BINGO_TEST_CHANNEL)
-    emoji = "❌"
-
-    submission = map_of_submissions.get(id)
-    # bot adds reaction to submission post to show approval
-    await submission.message.add_reaction(emoji)
-
-    author = submission.author.display_name
-    task = live_submissions.get(trimmedId)
-    team, isCaptain = await find_bingo_team(submission.author)
-    await update_team_sheet(team, task, author, 3)
-
-    # Updating database
-    await Queries.remove_submission(task, team)
-
-    # LOG
-    print(
-        "{0.user.display_name}: Captain, payload ID {1} has been DENIED.".format(
-            bot, trimmedId
-        )
-    )
-
-    embed = map_of_embeds.get(id)
-    embed_message = map_of_embed_messages.get(id)
-    embed.add_field(name="DENIED on: /n", value=d.strftime("%B %d %X"))
-
-    await embed_message.delete()
-    await channel.send(embed=embed)
-
-
-"""
-Future testing function:
-- TEST: handling many submissions very quickly
-- TEST: handling submission with many attachments
-"""
-
-
-# done
-async def test_submissions():
-    pass
+    await channel.send(embed=submission_embed)
 
 
 """
@@ -739,8 +543,8 @@ LIST_SIZE = 21
 def get_smack_talk(teamIn):
     global BINGO_TEAM_ROLES
 
-    team = "Test"
-    while team == "Test" and team != teamIn:
+    team = "Team Test"
+    while team == "Team Test" and team != teamIn:
         team = random.choice(list(BINGO_TEAM_ROLES.values()))
 
     player_smack_talk = {
@@ -841,58 +645,6 @@ async def post(ctx, icon, task):
 
 
 """
-Updates team sheet on Google sheets
-team - string player team name
-task - int task number
-code - method special parameter
-Updates the task cell on Google Sheets per code status
-1 = Awaiting Approval, 2 = Complete, 3 = Incomplete
-"""
-
-
-# done
-async def update_team_sheet(team: str, task: int, player: str, code: int):
-    # CODES: 1 = Awaiting Approval, 2 = Complete, 3 = Incomplete
-
-    d = datetime.datetime.now()
-    sheet = gc.open_by_key(GOOGLE_SHEETS_KEY)
-
-    TASK_STATUS_COLUMN = 6
-    TASK_DATE_COLUMN = 7
-    cell_row = task + 1
-
-    # Getting team specific sheet
-    team_sheet = sheet.worksheet(team)
-
-    # Updating task on team sheet
-    if code == 1:
-        team_sheet.update_cell(cell_row, TASK_STATUS_COLUMN, "Awaiting Approval")
-        team_sheet.update_cell(cell_row, TASK_DATE_COLUMN, str(d))
-        print(
-            'MX TEAM: Transmitting "{0} department" payload for Starfleet approval.'.format(
-                team
-            )
-        )
-    elif code == 2:
-        current_score = int(team_sheet.cell(4, 11).value)
-        points = task_points.get(task)
-        team_sheet.update_cell(cell_row, TASK_STATUS_COLUMN, "Complete")
-        team_sheet.update_cell(cell_row, TASK_DATE_COLUMN, str(d))
-        team_sheet.update_cell(4, 11, (current_score + points))
-        print(
-            'MX TEAM: The "{0} department\'s" payload has been approved.'.format(team)
-        )
-    else:
-        team_sheet.update_cell(cell_row, TASK_STATUS_COLUMN, "Incomplete")
-        team_sheet.update_cell(cell_row, TASK_DATE_COLUMN, str(d))
-        print('MX TEAM: The "{0} department\'s" payload was rejected.'.format(team))
-
-    history_sheet = sheet.worksheet("History")
-    print("MX TEAM: Interaction recorded.")
-    history_sheet.insert_row([player, team, task, code, str(d)], index=2)
-
-
-"""
 Connects to WOM API and gets competition data.
 Returns player XP gained during competition.
 """
@@ -904,7 +656,7 @@ async def wise_old_man(ctx):
 
     # LOG
     print(
-        "{0.user.display_name}: Captain, incoming transmission from Wise Old Man {1}, a retired Tal Shiar agent.".format(
+        "{0.user.display_name}: Captain, incoming transmission from Wise Old Man.".format(
             bot, ctx.author.display_name
         )
     )
@@ -959,13 +711,6 @@ async def on_message(message):
 
     # Tells bot to ignore its own messages
     if message.author == bot.user:
-        return
-    #  or message.author.id == WEBHOOK_USER_ID
-    if message.content.startswith("✅"):
-        await approve(message)
-        return
-    if message.content.startswith("❌"):
-        await deny(message)
         return
 
     team, isCaptain = await find_bingo_team(message.author)
