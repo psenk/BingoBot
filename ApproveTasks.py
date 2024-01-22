@@ -9,7 +9,7 @@ import Queries
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 EMBED_ICON_URL = "https://shorturl.at/wGOXY"
 BINGO_LOGS_CHANNEL = 1195530905398284348
@@ -32,21 +32,17 @@ class ApproveTasks(discord.ui.View):
 
     def create_embed(self, data, index):
         if len(data) == 0:
-            embed = discord.Embed(
-                title="There are no submissions available for approval."
-            )
+            embed = discord.Embed(title="There are no submissions available for approval.")
             return embed
 
-        (
-            self.submission_id,
-            self.task_id,
-            self.url,
-            self.channel_id,
-            self.message_id,
-            self.player,
-            self.team,
-            self.date,
-        ) = self.data[index - 1]
+        self.submission_id = self.data[index - 1].get('submission_id')
+        self.task_id = self.data[index - 1].get('task_id')
+        self.url = self.data[index - 1].get('img_url')
+        self.channel_id = self.data[index - 1].get('channel_id')
+        self.message_id = self.data[index - 1].get('message_id')
+        self.player = self.data[index - 1].get('player')
+        self.team = self.data[index - 1].get('team')
+        self.date = self.data[index - 1].get('date_submitted')
 
         embed = discord.Embed(title=f"Submission # {self.submission_id}")
         embed.set_thumbnail(url=self.url)
@@ -60,8 +56,8 @@ class ApproveTasks(discord.ui.View):
 
         return embed
 
-    async def send(self, ephemeral: bool):
-        self.message = await self.ctx.send(view=self, ephemeral=ephemeral)
+    async def send(self, ctx):
+        self.message = await ctx.send(view=self)
         await self.update_message(self.data, 1)
 
     async def update_message(self, data, index):
@@ -86,23 +82,19 @@ class ApproveTasks(discord.ui.View):
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
         await interaction.response.send_message("Approving submission, please do not touch the submission screen until current action is completed.")
-        self.submit_button.disabled = True
-        self.deny_button.disabled = True
-        try:
-            ch = await self.bot.fetch_channel(self.channel_id)
-            msg = await ch.fetch_message(self.message_id)
-            await msg.add_reaction("✅")
-        except:
-            pass
 
         await Queries.task_complete(self.team, self.task_id, self.player)
-        await self.update_team_sheet(self.team, self.task_id, self.player, 2)
+        #await self.update_team_sheet(self.team, self.task_id, self.player, 2)
         await Queries.remove_submission_by_id(self.submission_id)
         await self.post_approval_embed()
-
+        
         submissions = await Queries.get_submissions()
         self.current_page = 1
         await self.update_message(submissions, self.current_page)
+        
+        ch = await self.bot.fetch_channel(self.channel_id)
+        msg = await ch.fetch_message(self.message_id)
+        await msg.add_reaction("✅")
 
         # LOG
         print(
@@ -126,7 +118,7 @@ class ApproveTasks(discord.ui.View):
         except:
             pass
 
-        await self.update_team_sheet(self.team, self.task_id, self.player, 3)
+        #await self.update_team_sheet(self.team, self.task_id, self.player, 3)
         await Queries.remove_submission_by_id(self.submission_id)
         await self.post_deny_embed()
 

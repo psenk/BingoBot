@@ -461,12 +461,13 @@ async def approve(ctx) -> None:
         await ctx.send("This command is not authorized for use in this channel.")
         return
 
+    # submissions is a LIST of RECORDS
     submissions = await Queries.get_submissions()
 
     view = ApproveTasks(ctx, bot)
     view.data = submissions
 
-    await view.send(True)
+    await view.send(ctx)
     return
 
 
