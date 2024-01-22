@@ -8,15 +8,27 @@ from Data import *
 import Queries
 import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
 EMBED_ICON_URL = "https://shorturl.at/wGOXY"
+BINGO_LOGS_CHANNEL = 1195530905398284348
+
 
 class ApproveTasks(discord.ui.View):
-    def __init__(self, ctx, timeout: float = 180.0) -> None:
+    def __init__(self, ctx, bot, timeout: float = 180.0) -> None:
         super().__init__(timeout=timeout)
         self.ctx = ctx
+        self.bot = bot
         self.current_page = 1
+    
+    async def interaction_check(self, interaction: Interaction[discord.Client]):
+        if interaction.user == self.ctx.author:
+            return True
+        await interaction.response.send_message(
+            f"The command was initiated by {interaction.user}", ephemeral=True
+        )
+        return False
 
     def create_embed(self, data, index):
         if len(data) == 0:
@@ -37,8 +49,7 @@ class ApproveTasks(discord.ui.View):
         ) = self.data[index - 1]
 
         embed = discord.Embed(title=f"Submission # {self.submission_id}")
-        # embed.set_thumbnail(url=self.url)
-
+        embed.set_thumbnail(url=self.url)
         embed.add_field(name="Task:", value=task_list.get(self.task_id), inline=False)
         embed.add_field(name="Submission:", value=f"[HERE]({self.url})", inline=True)
         embed.add_field(name="Player:", value=f"{self.player}", inline=True)
@@ -54,8 +65,9 @@ class ApproveTasks(discord.ui.View):
         await self.update_message(self.data, 1)
 
     async def update_message(self, data, index):
-        await self.update_buttons()
+        await self.update_buttons(data)
         await self.message.edit(embed=self.create_embed(data, index), view=self)
+
 
     @discord.ui.button(
         label="<", custom_id="prev_button", style=discord.ButtonStyle.blurple
@@ -68,22 +80,24 @@ class ApproveTasks(discord.ui.View):
         await self.update_message(self.data, self.current_page)
 
     @discord.ui.button(
-        label="Approve", custom_id="approve_button", style=discord.ButtonStyle.green
+        label="Approve", custom_id="submit_button", style=discord.ButtonStyle.green
     )
     async def submit_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        await interaction.response.defer()
-
+        await interaction.response.send_message("Approving submission, please do not touch the submission screen until current action is completed.")
+        self.submit_button.disabled = True
+        self.deny_button.disabled = True
         try:
-            msg = await self.ctx.fetch_message(self.message_id)
+            ch = await self.bot.fetch_channel(self.channel_id)
+            msg = await ch.fetch_message(self.message_id)
             await msg.add_reaction("✅")
         except:
             pass
 
         await Queries.task_complete(self.team, self.task_id, self.player)
         await self.update_team_sheet(self.team, self.task_id, self.player, 2)
-        await Queries.remove_submission(self.submission_id)
+        await Queries.remove_submission_by_id(self.submission_id)
         await self.post_approval_embed()
 
         submissions = await Queries.get_submissions()
@@ -103,16 +117,17 @@ class ApproveTasks(discord.ui.View):
     async def deny_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        await interaction.response.defer()
+        await interaction.response.send_message("Denying submission, please do not touch the submission screen until current action is completed.")
 
         try:
-            msg = await self.ctx.fetch_message(self.message_id)
+            ch = await self.bot.fetch_channel(self.channel_id)
+            msg = await ch.fetch_message(self.message_id)
             await msg.add_reaction("❌")
         except:
             pass
 
         await self.update_team_sheet(self.team, self.task_id, self.player, 3)
-        await Queries.remove_submission(self.submission_id)
+        await Queries.remove_submission_by_id(self.submission_id)
         await self.post_deny_embed()
 
         submissions = await Queries.get_submissions()
@@ -153,8 +168,8 @@ class ApproveTasks(discord.ui.View):
         d = datetime.datetime.now()
         sheet = gc.open_by_key(GOOGLE_SHEETS_KEY)
 
-        TASK_STATUS_COLUMN = 6
-        TASK_DATE_COLUMN = 7
+        TASK_STATUS_COLUMN = 5
+        TASK_DATE_COLUMN = 6
         cell_row = task + 1
 
         # Getting team specific sheet
@@ -166,11 +181,13 @@ class ApproveTasks(discord.ui.View):
             team_sheet.update_cell(cell_row, TASK_DATE_COLUMN, str(d))
             print(f"SHEETS: Updating task {task} for team {team}")
         elif code == 2:
-            current_score = int(team_sheet.cell(4, 11).value)
+            current_score = int(team_sheet.cell(4, 10).value)
+            if current_score == None:
+                current_score = 0
             points = task_points.get(task)
             team_sheet.update_cell(cell_row, TASK_STATUS_COLUMN, "Complete")
             team_sheet.update_cell(cell_row, TASK_DATE_COLUMN, str(d))
-            team_sheet.update_cell(4, 11, (current_score + points))
+            team_sheet.update_cell(4, 10, (current_score + points))
             print(f"SHEETS: Approving task {task} for team {team}")
         else:
             team_sheet.update_cell(cell_row, TASK_STATUS_COLUMN, "Incomplete")
@@ -178,22 +195,22 @@ class ApproveTasks(discord.ui.View):
             print(f"SHEETS: Denying task {task} for team {team}")
 
         history_sheet = sheet.worksheet("History")
-        print("SHEETS: History recorded.")
         history_sheet.insert_row([player, team, task, code, str(d)], index=2)
+        print("SHEETS: History recorded.")
 
-    async def update_buttons(self):
-        if len(self.data) == 0:
+    async def update_buttons(self, data):
+        if len(data) == 0:
             self.prev_button.disabled = True
             self.submit_button.disabled = True
             self.deny_button.disabled = True
             self.next_button.disabled = True
-        elif len(self.data) == 1:
+        elif len(data) == 1:
             self.prev_button.disabled = True
             self.next_button.disabled = True
         elif self.current_page == 1:
             self.prev_button.disabled = True
             self.next_button.disabled = False
-        elif self.current_page == len(self.data):
+        elif self.current_page == len(data):
             self.next_button.disabled = True
             self.prev_button.disabled = False
         else:
@@ -203,25 +220,27 @@ class ApproveTasks(discord.ui.View):
             self.next_button.disabled = False
 
     async def post_approval_embed(self):
-        # Creating the custom embed to track the submission
+        channel = await self.bot.fetch_channel(BINGO_LOGS_CHANNEL)
+
         approval_embed = discord.Embed(
-            title=f"Submission Approved", url=self.url, color=0xFF0000
+            title=f"Submission Approved", url=self.url, color=0x00FF00
         )
-        approval_embed.set_thumbnail(url=EMBED_ICON_URL)
+        approval_embed.set_thumbnail(url=self.url)
         approval_embed.add_field(name="Team:", value=self.team)
         approval_embed.add_field(name="Player:", value=self.player)
         approval_embed.add_field(name="Approved on:", value=self.date)
 
-        await self.ctx.send(embed=approval_embed)
+        await channel.send(embed=approval_embed)
 
     async def post_deny_embed(self):
-        # Creating the custom embed to track the submission
+        channel = await self.bot.fetch_channel(BINGO_LOGS_CHANNEL)
+
         denial_embed = discord.Embed(
             title=f"Submission Denied", url=self.url, color=0xFF0000
         )
-        denial_embed.set_thumbnail(url=EMBED_ICON_URL)
+        denial_embed.set_thumbnail(url=self.url)
         denial_embed.add_field(name="Team:", value=self.team)
         denial_embed.add_field(name="Player:", value=self.player)
         denial_embed.add_field(name="Denied on:", value=self.date)
 
-        await self.ctx.send(embed=denial_embed)
+        await channel.send(embed=denial_embed)
