@@ -84,7 +84,7 @@ class ApproveTasks(discord.ui.View):
         await interaction.response.send_message("Approving submission, please do not touch the submission screen until current action is completed.")
 
         await Queries.task_complete(self.team, self.task_id, self.player)
-        #await self.update_team_sheet(self.team, self.task_id, self.player, 2)
+        await self.update_team_sheet(self.team, self.task_id, self.player, 2)
         await Queries.remove_submission_by_id(self.submission_id)
         await self.post_approval_embed()
         
@@ -118,7 +118,7 @@ class ApproveTasks(discord.ui.View):
         except:
             pass
 
-        #await self.update_team_sheet(self.team, self.task_id, self.player, 3)
+        await self.update_team_sheet(self.team, self.task_id, self.player, 3)
         await Queries.remove_submission_by_id(self.submission_id)
         await self.post_deny_embed()
 
