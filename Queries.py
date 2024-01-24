@@ -1,7 +1,6 @@
-
 import asyncpg
 import os
-from datetime import datetime
+import datetime
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
@@ -10,6 +9,9 @@ DB_USERNAME = os.getenv("PG_USERNAME")
 DB_PW = os.getenv("PG_PASSWORD")
 DB_URI = os.getenv("DATABASE_URI")
 TEST_DB = "postgres://postgres:root@localhost:5432/battle_bingo"
+TZ_OFFSET = -6.0
+
+tz_info = datetime.timezone(datetime.timedelta(hours=TZ_OFFSET))
 
 # tested good
 async def connect_to_db():    
@@ -24,7 +26,7 @@ async def task_complete(team: str, task: int, player: str):
     team_snip = team.lower().replace(' ', '_')
     team_snip = team.lower().replace('\'', '')
     connection = await connect_to_db()
-    d = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    d = datetime.datetime.now(tz_info).strftime("%Y-%m-%d %H:%M:%S")
     
     team_board = f"{team_snip}_board_state"
     update_task_completion_query = f"UPDATE {team_board} SET task_completion = TRUE, completed_by = '{player}', completed_on = '{d}' WHERE task_id = {task};"
@@ -42,7 +44,7 @@ async def task_complete(team: str, task: int, player: str):
 # tested good
 async def add_submission(task: int, url: str, player: str, team: str, channel_id, message_id):
     connection = await connect_to_db()
-    d = datetime.now().strftime("%Y-%m-%d %H:%M:%S")    
+    d = datetime.datetime.now(tz_info).strftime("%Y-%m-%d %H:%M:%S")    
     add_submission_query = f"INSERT INTO submissions (task_id, img_url, channel_id, message_id, player, team, date_submitted) VALUES ({task}, '{url}', {channel_id}, {message_id}, '{player}', '{team}', '{d}');"
     print("PG: Adding Submission -> " + add_submission_query)    
     await connection.execute(add_submission_query)    

@@ -2,14 +2,15 @@ from __future__ import annotations
 import discord
 from discord.interactions import Interaction
 import discord.ui
+import Queries
+from Data import *
 
 # TODO: show only non-completed tasks
-
 
 class Tasks(discord.ui.View):
 
     current_page = 1
-    separator = 9
+    separator = 10
     task = 1
 
     def __init__(
@@ -26,30 +27,51 @@ class Tasks(discord.ui.View):
         return False
 
     async def on_timeout(self) -> None:
-        for button in self.children:
-            button.disabled = True  # type: ignore
         if self.message:
-            await self.message.edit(view=self)
+            await self.message.delete()
+
     
     async def send(self, ctx):
         self.message = await ctx.send(view = self)
         await self.update_message(self.data)
     
-    def create_embed(self, data):        
+    # TODO: move the logic from here to the button press
+    
+    async def create_embed(self, data):
+        start_task, end_task = await Queries.get_unlocked_tasks()
+        
+        if start_task == 0 or end_task == 0:
+            embed = discord.Embed(title="There are no tasks available at this time.")
+            self.first_page_button.disabled = True
+            self.prev_page_button.disabled = True
+            self.last_page_button.disabled = True
+            self.next_page_button.disabled = True
+            return embed
         embed = discord.Embed(title="Battle Bingo Task List")
-        if self.current_page == 1:
-            count = 1
+        # counts the tasks (for the bullet ordering)
+        if start_task == 1:
+            count = (self.current_page * self.separator) - 9
+            print("start == 1, so count ==: " + str(count))
         else:
-            count = (self.current_page - 1) * self.separator + 1
-            
-        for item in data:
-            embed.add_field(name=f"Task #{count}", value=item, inline=False)
-            count += 1
+            count = ((self.current_page - 1) * 10) +  start_task
+            print("start != 1, so count ==: " + str(count))        
+        
+        for i in range(0, self.separator):
+            print(count)
+            if count > end_task:
+                self.last_page_button.disabled = True
+                self.next_page_button.disabled = True
+                return embed
+            if start_task <= count <= end_task:
+                embed.add_field(name=f"Task #{count}", value=task_list.get(count), inline=False)
+                count += 1
+                
         return embed
+       
 
     async def update_message(self, data):
         self.update_buttons()
-        await self.message.edit(embed=self.create_embed(data), view=self)
+        await self.message.edit(embed=await self.create_embed(data), view=self)
 
     def update_buttons(self):
         if self.current_page == 1:
@@ -71,7 +93,6 @@ class Tasks(discord.ui.View):
         await interaction.response.defer()
         self.current_page = 1
         until_item = self.current_page * self.separator
-        from_item = until_item - self.separator
         await self.update_message(self.data[:until_item])
 
     @discord.ui.button(label="<", custom_id="prev_page_button", style=discord.ButtonStyle.blurple)

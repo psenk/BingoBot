@@ -38,17 +38,17 @@ WEBHOOK_USER_ID = 1195911136021852191
 GENERAL_BINGO_ROLE = 1196183580615909446
 BINGO_TEAM_ROLES = {
     1196180292742951003: "The Fat Woodcocks",
-    1196182424913199217: "The Posture Inspectors",
+    1196182424913199217: "Seczey\'s Revenge",
     1196182816099152013: "TFK",
     1196183381931720796: "The Real World Traders",
     1196183533308358696: "BBBBB",
     1196916756384600074: "Phased and Confused",
     # For testing
-    1195556259160666172: "Team Test",
+    # 1195556259160666172: "Team Test",
 }
 BINGO_TEAM_CHANNELS = {
     "The Fat Woodcocks": 1197945391929368596,
-    "The Posture Inspectors": 1197945547714207805,
+    "Seczey\'s Revenge": 1197945547714207805,
     "TFK": 1197945883585675354,
     "The Real World Traders": 1197946038179352696,
     "BBBBB": 1197946114356289587,
@@ -62,6 +62,8 @@ ADMIN_RIGHTS = [453652490274078720, 545728431917236226]
 EMBED_ICON_URL = "https://shorturl.at/wGOXY"
 RULES_POST_URL = "https://discord.com/channels/741153043776667658/1193039460980502578/1193042254751879218"
 RULES_POST_MSG = 1193042254751879218
+# MISC
+TZ_OFFSET = -6.0
 
 #
 # VARIABLES
@@ -76,25 +78,23 @@ wom_client = wom.Client()
 handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
 
 # MISC
-tasks_revealed = 9
+tz_info = datetime.timezone(datetime.timedelta(hours=TZ_OFFSET))
 
 #
 # BOT COMMANDS
 #
 
+# TODO: smack talk bug
 # TODO: memory leak??
-# TODO: outside hosting?
-
 # TODO: IMPORTANT--prevent double submissions
 # TODO: SAVE THE DATA!! reboot from save command?  save data manually command?
-# TODO: submit multiple photos at once
 # TODO: "who called what" command logs?
 # TODO: divide code into packaged files
 # TODO: write bot start-up batch script
 # TODO: match team color to profile embed, or random colors
 # TODO: add toggleable options
 # TODO: convert all images to discord.File local images
-# TODO: docker?
+
 
 # "!bingotest" command
 # For testing purposes
@@ -105,6 +105,16 @@ async def test(ctx) -> None:
 
 
 # GLOBAL COMMANDS
+
+
+# "!bingorange" command
+# Updates the amount of tasks available
+# start - first task in range
+# end - last task in range
+@bot.command()
+async def range(ctx, start: int, stop: int):
+    await Queries.update_unlocked_tasks(start, stop)
+    return
 
 
 # "!bingowhen" command
@@ -140,12 +150,12 @@ async def info(ctx) -> None:
     bingo_info_embed.set_thumbnail(url=EMBED_ICON_URL)
     bingo_info_embed.add_field(
         name="Start Date:",
-        value="Thursday, January 25th, 9:30pm\nafter the clan meeting",
+        value="Thursday, January 25th, 9:30pm EST\nafter the clan meeting",
     )
     bingo_info_embed.add_field(name="Duration:", value="3 weeks")
     bingo_info_embed.add_field(name="Cost to Enter:", value="10M GP per person")
     bingo_info_embed.add_field(name="", value="", inline=False)
-    bingo_info_embed.add_field(name="Current prize pool:", value="Over 1 Billion GP")
+    bingo_info_embed.add_field(name="Current prize pool:", value="Over 2 BILLION GP")
     bingo_info_embed.add_field(name="Second place prize:", value="Refunded entry fee")
     bingo_info_embed.add_field(name="Points Achieveable:", value="200")
     bingo_info_embed.add_field(name="", value="", inline=False)
@@ -162,7 +172,7 @@ async def info(ctx) -> None:
     bingo_info_embed.add_field(name="", value="Watch for a Discord ping!", inline=False)
     bingo_info_embed.add_field(name="", value="", inline=False)
     bingo_info_embed.add_field(name="The Fat Woodcocks", value="Captain: Hokumpoke")
-    bingo_info_embed.add_field(name="The Posture Inspectors", value="Captain: Seczey")
+    bingo_info_embed.add_field(name="Seczey\'s Revenge", value="Captain: Seczey")
     bingo_info_embed.add_field(name="TFK", value="Captain: Kyanize")
     bingo_info_embed.add_field(
         name="The Real World Traders", value="Captain: ItsOnlyPrime"
@@ -176,7 +186,6 @@ async def info(ctx) -> None:
 
 # "!bingome" command
 # Displays custom bingo player profile card in an embed
-# TODO: Track amount of posts in general channel as smack talk stat
 @bot.command()
 async def me(ctx) -> None:
     global player_titles_dict
@@ -185,7 +194,7 @@ async def me(ctx) -> None:
     team, isCaptain = await find_bingo_team(ctx.author)
     if team == None:
         await ctx.channel.send(
-            "You are not in the bingo.  But it's not too late to sign up!"
+            "You are not in the bingo.  RIP you.  Try and catch the next one!"
         )
         return
     elif team == "Bingo":
@@ -226,7 +235,7 @@ async def me(ctx) -> None:
 # TODO: Trim these town to all unlocked tasks
 # done
 @bot.command()
-async def DISABLEDtasks(ctx) -> None:
+async def tasks(ctx) -> None:
     view = Tasks(ctx.author)
     view.data = list(task_list.values())
 
@@ -262,13 +271,18 @@ async def menu(ctx) -> None:
     bingo_info_embed.add_field(name="", value="", inline=False)
     bingo_info_embed.add_field(
         name="!bingosubmit",
-        value="UNDER CONSTRUCTION DO NOT USE\nTile Submission Tool, used to submit your tile completion screenshots.",
+        value="DISABLED UNTIL BINGO START\nTile Submission Tool, used to submit your tile completion screenshots.",
     )
     bingo_info_embed.add_field(
         name="!bingoapprove",
         value="ADMIN USE ONLY.  Approve submissions.",
     )
-
+    bingo_info_embed.add_field(
+        name="!bingorange",
+        value="ADMIN USE ONLY.  Set range of tasks currently available.",
+    )
+    bingo_info_embed.add_field(name="", value="", inline=False)
+    
     await ctx.send(embed=bingo_info_embed)
     return
 
@@ -375,7 +389,7 @@ async def rules(ctx):
 # int - task number
 # Data about the interaction is used for recognizing submissions
 @bot.command()
-async def submit(ctx, task: int) -> None:
+async def DISABLEDsubmit(ctx, task: int) -> None:
 
     # TODO: IMPORTANT---switch before going live
     # TODO: Check for submission in correct team channel
@@ -386,51 +400,75 @@ async def submit(ctx, task: int) -> None:
         await ctx.send("I'm sorry, but you do not have access to this command.")
         return
 
-    if ctx.channel.id != BINGO_TEAM_CHANNELS.get(team):
+    if ctx.channel.id != BINGO_TEAM_CHANNELS.get(team) and ctx.channel.id != TEST_SUBMISSIONS_CHANNEL:
         await ctx.send("This is not your teams submissions channel!")
         return
     
     if task > len(task_list) or task <= 0:
-        await ctx.send("Task number out of bounds.")
-        return
-        
+        if task != 999: # testing task
+            await ctx.send("Task number out of bounds.")
+            return
+    
+    # are there attachments on the message?
     if ctx.message.attachments:
+        # are the attachments the right file types?
         for attachment in ctx.message.attachments:
-            if attachment.filename.endswith((".png", ".jpg", ".jpeg", ".gif")):
-
-                # Confirmation window
-                toPost = await post(ctx, attachment.url, task)
-                if not toPost:
-                    return
-
-                await ctx.send(
-                    "Your submission has been sent to Bingo Overlord Foki for review."
-                )
-
-                # Updating database
-                await Queries.add_submission(
-                    task,
-                    attachment.url,
-                    ctx.author.display_name,
-                    team,
-                    ctx.channel.id,
-                    ctx.message.id,
-                )
-
-                # snarky options if desired
-                # bot_response = random.randint(1, 10)
-                # await message.channel.send(submission_responses_dict[bot_response])
-
-                # posting logs to #logs channel
-                await submission_alert(ctx, team)
-                # LOG
-                print("Foki Bot: Captain, we've received a bingo submission.")
-
-            # Submission screenshot is the wrong file type
+            name = attachment.filename.lower()
+            # parameter needs to be a tuple
+            if name.endswith((".png", ".jpg", ".jpeg", ".gif")):
+                continue
             else:
-                await ctx.send(
-                    "The file type you have submitted is not supported.  Please use .png, .jpg, .jpeg, or .gif."
-                )
+                await ctx.send("One of the files you have submitted has an unsupported file type.  Please use .png, .jpg, .jpeg, or .gif.")
+                return
+        
+        # is the user SURE they want to post this?
+        toPost = await post(ctx, ctx.message.attachments[0].url, task)
+        if not toPost:
+            return
+        
+        # are there multiple images on the submission?
+        if len(ctx.message.attachments) > 1:
+            
+            await ctx.send(
+                "Your submission has been sent to Mr. Foki Ironman, CEO/Founder, Battle Bingo LLC. for review."
+            )
+            
+            # Updating database
+            await Queries.add_submission(task,ctx.message.attachments[0].url,ctx.author.display_name,team,ctx.channel.id,ctx.message.id,)
+
+            # snarky options if desired
+            # bot_response = random.randint(1, 10)
+            # await message.channel.send(submission_responses_dict[bot_response])
+
+            # posting logs to #logs channel
+            await submission_alert(ctx, team, multi=True)
+            # LOG
+            print("Foki Bot: Captain, we've received a bingo submission.")
+        
+        # there is only one image in the submission
+        else:
+            await ctx.send(
+                "Your submission has been sent to Mr. Foki Ironman, CEO/Founder, Battle Bingo LLC. for review."
+            )
+
+            # Updating database
+            await Queries.add_submission(
+                task,
+                ctx.message.attachments[0].url,
+                ctx.author.display_name,
+                team,
+                ctx.channel.id,
+                ctx.message.id,
+            )
+
+            # snarky options if desired
+            # bot_response = random.randint(1, 10)
+            # await message.channel.send(submission_responses_dict[bot_response])
+
+            # posting logs to #logs channel
+            await submission_alert(ctx, team)
+            # LOG
+            print("Foki Bot: Captain, we've received a bingo submission.")
 
     # No attachment on message
     else:
@@ -484,17 +522,23 @@ BINGO_LOGS_CHANNEL - Discord channel to post message to (channel ID)
 
 
 # done
-async def submission_alert(ctx, team: str) -> None:
-    d = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+async def submission_alert(ctx, team: str, multi: bool = False) -> None:
+    d = datetime.datetime.now(tz_info).strftime("%Y-%m-%d %H:%M:%S")
     # TODO: IMPORTANT---Switch to proper LOGS channel at launch
     channel = await bot.fetch_channel(BINGO_LOGS_CHANNEL)
 
-    submission_embed = discord.Embed(
-        title=f"Submission Received", url=ctx.message.jump_url, color=0x0000FF
-    )
+    if (multi):
+        submission_embed = discord.Embed(
+            title=f"Submission Received (multiple images)", url=ctx.message.jump_url, color=0x0000FF
+        )
+    else:
+        submission_embed = discord.Embed(
+            title=f"Submission Received", url=ctx.message.jump_url, color=0x0000FF
+        )
     submission_embed.set_thumbnail(url=ctx.message.attachments[0].url)
     submission_embed.add_field(name="Team:", value=team)
     submission_embed.add_field(name="Player:", value=ctx.author.display_name)
+    submission_embed.add_field(name="", value="")
     submission_embed.add_field(name="Approved on:", value=d)
 
     # Posting embed the custom embed
@@ -545,8 +589,8 @@ LIST_SIZE = 42
 def get_smack_talk(teamIn: str) -> str:
     global BINGO_TEAM_ROLES
 
-    team = "Team Test"
-    while team == "Team Test" and team != teamIn:
+    team = teamIn
+    while team == teamIn:
         team = random.choice(list(BINGO_TEAM_ROLES.values()))
 
     player_smack_talk = {
@@ -688,10 +732,9 @@ async def on_ready():
     # LOG
     print("{0.user.display_name}: Captain, warp drive is online.".format(bot))
     await wom_client.start()
-    return
 
     # Custom discord announcement
-    # await bot.get_channel(BINGO_GENERAL_CHANNEL).send("Fuck you back Sasa.")
+    #await bot.get_channel(BINGO_GENERAL_CHANNEL).send("I think Seczey's team has a fair shot though, honestly.")
 
 
 """
@@ -703,7 +746,11 @@ Static Discord bot event, triggers whenever a message is sent by a user.
 async def on_message(message):
     # TODO: if message NOT IN these channels:
     await bot.process_commands(message)
-
+    
+    # TFK BABY LFG
+    #emoji = "<:tfk2:1199460856182878240>"
+    #await message.add_reaction(emoji)
+    
     if message.author.id == 483092611419078659:
         await message.add_reaction("🖕")
 

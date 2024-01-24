@@ -8,12 +8,13 @@ from Data import *
 import Queries
 import os
 from dotenv import load_dotenv
-
 load_dotenv(override=True)
 
 EMBED_ICON_URL = "https://shorturl.at/wGOXY"
 BINGO_LOGS_CHANNEL = 1195530905398284348
+TZ_OFFSET = -6.0
 
+tz_info = datetime.timezone(datetime.timedelta(hours=TZ_OFFSET))
 
 class ApproveTasks(discord.ui.View):
     def __init__(self, ctx, bot, timeout: float = 45.0) -> None:
@@ -30,6 +31,10 @@ class ApproveTasks(discord.ui.View):
         )
         return False
 
+    async def on_timeout(self) -> None:
+        if self.message:
+            await self.message.delete()
+    
     def create_embed(self, data, index):
         if len(data) == 0:
             embed = discord.Embed(title="There are no submissions available for approval.")
@@ -44,7 +49,7 @@ class ApproveTasks(discord.ui.View):
         self.team = self.data[index - 1].get('team')
         self.date = self.data[index - 1].get('date_submitted')
 
-        embed = discord.Embed(title=f"Submission # {self.submission_id}")
+        embed = discord.Embed(title=f"Submission # {self.submission_id}", url=self.url)
         embed.set_thumbnail(url=self.url)
         embed.add_field(name="Task:", value=task_list.get(self.task_id), inline=False)
         embed.add_field(name="Submission:", value=f"[HERE]({self.url})", inline=True)
@@ -81,7 +86,7 @@ class ApproveTasks(discord.ui.View):
     async def submit_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        warning_msg = await interaction.response.send_message("Approving submission, please do not touch the submission screen until current action is completed.")
+        warning_msg = await interaction.response.send_message("Approving submission, please do not touch the submission screen until current action is completed.", delete_after=3.0)
 
         await Queries.task_complete(self.team, self.task_id, self.player)
         await self.update_team_sheet(self.team, self.task_id, self.player, 2)
@@ -102,7 +107,6 @@ class ApproveTasks(discord.ui.View):
                 self.submission_id
             )
         )
-        warning_msg.delete()
 
     @discord.ui.button(
         label="Deny", custom_id="deny_button", style=discord.ButtonStyle.red
@@ -110,7 +114,7 @@ class ApproveTasks(discord.ui.View):
     async def deny_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        warning_msg = await interaction.response.send_message("Denying submission, please do not touch the submission screen until current action is completed.")
+        warning_msg = await interaction.response.send_message("Denying submission, please do not touch the submission screen until current action is completed.", delete_after=3.0)
 
         await self.update_team_sheet(self.team, self.task_id, self.player, 3)
         await Queries.remove_submission_by_id(self.submission_id)
@@ -156,7 +160,7 @@ class ApproveTasks(discord.ui.View):
         gc = gspread.service_account(filename="service_account.json")
         GOOGLE_SHEETS_KEY = os.getenv("GOOGLE_SHEETS_KEY")
 
-        d = datetime.datetime.now()
+        d = datetime.datetime.now(tz_info)
         sheet = gc.open_by_key(GOOGLE_SHEETS_KEY)
 
         TASK_STATUS_COLUMN = 5
