@@ -130,8 +130,14 @@ INSERT INTO tasks VALUES
 (96,1,E'BONUS: Get sasa to say "I love you".');
 
 CREATE TABLE settings (
-	id int
+	setting_name VARCHAR(30) NOT NULL,
+    setting_start INT NOT NULL,
+    setting_end INT NOT NULL
 );
+
+INSERT INTO settings VALUES (
+    ('days_unlocked', 0, 0)
+)
 
 CREATE TABLE the_fat_woodcocks (
 	player_id SERIAL NOT NULL,
