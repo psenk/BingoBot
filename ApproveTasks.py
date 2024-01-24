@@ -16,7 +16,7 @@ BINGO_LOGS_CHANNEL = 1195530905398284348
 
 
 class ApproveTasks(discord.ui.View):
-    def __init__(self, ctx, bot, timeout: float = 180.0) -> None:
+    def __init__(self, ctx, bot, timeout: float = 45.0) -> None:
         super().__init__(timeout=timeout)
         self.ctx = ctx
         self.bot = bot
@@ -81,7 +81,7 @@ class ApproveTasks(discord.ui.View):
     async def submit_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        await interaction.response.send_message("Approving submission, please do not touch the submission screen until current action is completed.")
+        warning_msg = await interaction.response.send_message("Approving submission, please do not touch the submission screen until current action is completed.")
 
         await Queries.task_complete(self.team, self.task_id, self.player)
         await self.update_team_sheet(self.team, self.task_id, self.player, 2)
@@ -102,6 +102,7 @@ class ApproveTasks(discord.ui.View):
                 self.submission_id
             )
         )
+        warning_msg.delete()
 
     @discord.ui.button(
         label="Deny", custom_id="deny_button", style=discord.ButtonStyle.red
@@ -109,14 +110,7 @@ class ApproveTasks(discord.ui.View):
     async def deny_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        await interaction.response.send_message("Denying submission, please do not touch the submission screen until current action is completed.")
-
-        try:
-            ch = await self.bot.fetch_channel(self.channel_id)
-            msg = await ch.fetch_message(self.message_id)
-            await msg.add_reaction("❌")
-        except:
-            pass
+        warning_msg = await interaction.response.send_message("Denying submission, please do not touch the submission screen until current action is completed.")
 
         await self.update_team_sheet(self.team, self.task_id, self.player, 3)
         await Queries.remove_submission_by_id(self.submission_id)
@@ -126,12 +120,17 @@ class ApproveTasks(discord.ui.View):
         self.current_page = 1
         await self.update_message(submissions, self.current_page)
 
+        ch = await self.bot.fetch_channel(self.channel_id)
+        msg = await ch.fetch_message(self.message_id)
+        await msg.add_reaction("❌")
+
         # LOG
         print(
             "Foki Bot: Captain, submission ID # {0} has been DENIED.".format(
                 self.submission_id
             )
         )
+        warning_msg.delete()
 
     @discord.ui.button(
         label=">", custom_id="next_button", style=discord.ButtonStyle.blurple
@@ -164,6 +163,7 @@ class ApproveTasks(discord.ui.View):
         TASK_DATE_COLUMN = 6
         cell_row = task + 1
 
+        print(team)
         # Getting team specific sheet
         team_sheet = sheet.worksheet(team)
 
