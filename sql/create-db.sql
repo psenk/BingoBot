@@ -1,7 +1,7 @@
 DROP TABLE IF EXISTS the_fat_woodcocks;
 DROP TABLE IF EXISTS the_fat_woodcocks_board_state;
-DROP TABLE IF EXISTS the_posture_inspectors;
-DROP TABLE IF EXISTS the_posture_inspectors_board_state;
+DROP TABLE IF EXISTS seczeys_revenge;
+DROP TABLE IF EXISTS seczeys_revenge_board_state;
 DROP TABLE IF EXISTS tfk;
 DROP TABLE IF EXISTS tfk_board_state;
 DROP TABLE IF EXISTS the_real_world_traders;
@@ -127,7 +127,8 @@ INSERT INTO tasks VALUES
 (93,1,E'BONUS: Get a boss pet'),
 (94,1,E'BONUS: Get a 99'),
 (95,1,E'BONUS: PK over 100m to someone not in clan, not in deathmatch. Just a good ol fashioned wildy PK.'),
-(96,1,E'BONUS: Get sasa to say "I love you".');
+(96,1,E'BONUS: Get sasa to say "I love you".'),
+(999,999,E'TEST TASK');
 
 CREATE TABLE settings (
 	setting_name VARCHAR(30) NOT NULL,
@@ -135,9 +136,7 @@ CREATE TABLE settings (
     setting_end INT NOT NULL
 );
 
-INSERT INTO settings VALUES (
-    ('days_unlocked', 0, 0)
-)
+INSERT INTO settings VALUES ('days_unlocked', 0, 0);
 
 CREATE TABLE the_fat_woodcocks (
 	player_id SERIAL NOT NULL,
@@ -253,14 +252,14 @@ INSERT INTO the_fat_woodcocks_board_state VALUES
 (95, FALSE, '', null),
 (96, FALSE, '', null);
 
-CREATE TABLE the_posture_inspectors (
+CREATE TABLE seczeys_revenge (
 	player_id SERIAL NOT NULL,
     player_name VARCHAR(20) NOT NULL,
     tasks_completed INT,
     PRIMARY KEY(player_id)
 );
 
-CREATE TABLE the_posture_inspectors_board_state (
+CREATE TABLE seczeys_revenge_board_state (
 	task_id SERIAL NOT NULL,
     task_completion BOOLEAN,
     completed_by VARCHAR(20),
@@ -269,7 +268,7 @@ CREATE TABLE the_posture_inspectors_board_state (
     FOREIGN KEY(task_id) REFERENCES tasks(task_id)
 );
 
-INSERT INTO the_posture_inspectors_board_state VALUES 
+INSERT INTO seczeys_revenge_board_state VALUES 
 (1, FALSE, '', null),
 (2, FALSE, '', null),
 (3, FALSE, '', null),

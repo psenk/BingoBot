@@ -95,7 +95,8 @@ task_list = {
     93: "[1 point] BONUS: Get a boss pet",
     94: "[1 point] BONUS: Get a 99",
     95: "[1 point] BONUS: PK over 100m to someone not in clan, not in deathmatch. Just a good ol fashioned wildy PK.",
-    96: '[1 point] BONUS: Get sasa to say "I love you"',
+    96: "[1 point] BONUS: Get sasa to say \"I love you\"",
+    999: "TEST TASK"
 }
 
 # Dict of bingo task point values
@@ -196,6 +197,7 @@ task_points = {
     94: 1,
     95: 1,
     96: 1,
+    999: 999 # test task
 }
 
 # Gives user profiles custom titles
