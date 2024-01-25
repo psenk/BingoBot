@@ -33,7 +33,6 @@ class Tasks(discord.ui.View):
         except:
             pass
 
-    
     async def send(self, ctx):
         self.message = await ctx.send(view = self)
         await self.update_message(self.data)
@@ -90,14 +89,14 @@ class Tasks(discord.ui.View):
             self.next_page_button.disabled = False
 
     @discord.ui.button(label="|<", custom_id="first_page_button", style=discord.ButtonStyle.blurple)
-    async def first_page_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def first_page_button(self, interaction: Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         self.current_page = 1
         until_item = self.current_page * self.separator
         await self.update_message(self.data[:until_item])
 
     @discord.ui.button(label="<", custom_id="prev_page_button", style=discord.ButtonStyle.blurple)
-    async def prev_page_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def prev_page_button(self, interaction: Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         self.current_page -= 1
         until_item = self.current_page * self.separator
@@ -105,7 +104,7 @@ class Tasks(discord.ui.View):
         await self.update_message(self.data[from_item:until_item])
         
     @discord.ui.button(label=">", custom_id="next_page_button", style=discord.ButtonStyle.blurple)
-    async def next_page_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def next_page_button(self, interaction: Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         self.current_page += 1
         until_item = self.current_page * self.separator
@@ -113,7 +112,7 @@ class Tasks(discord.ui.View):
         await self.update_message(self.data[from_item:until_item])
         
     @discord.ui.button(label=">|", custom_id="last_page_button", style=discord.ButtonStyle.blurple)
-    async def last_page_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def last_page_button(self, interaction: Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         self.current_page = int(len(self.data) / self.separator) + 1
         until_item = self.current_page * self.separator

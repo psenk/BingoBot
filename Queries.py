@@ -15,22 +15,22 @@ tz_info = datetime.timezone(datetime.timedelta(hours=TZ_OFFSET))
 
 # tested good
 async def connect_to_db():    
-    #connection = await asyncpg.connect("postgres://bingo_bot:gUw29uN8TgRDUOR@bb-database.internal:5432/bingo_bot")
-    connection = await asyncpg.connect("postgres://postgres:root@localhost:5432/battle_bingo")
+    connection = await asyncpg.connect("postgres://bingo_bot:gUw29uN8TgRDUOR@bb-database.internal:5432/bingo_bot")
+    #connection = await asyncpg.connect("postgres://postgres:root@localhost:5432/battle_bingo")
     print("PG: Connected to bingo database.")
     return connection
 
 # tested good
 async def task_complete(team: str, task: int, player: str):
     
-    team_snip = team.lower().replace(' ', '_')
-    team_snip = team_snip.lower().replace('\'', '')
+    team_snip = team.replace(' ', '_')
+    team_snip = team_snip.replace('\'', '')
+    team = team.replace('\'', '')
 
     connection = await connect_to_db()
     d = datetime.datetime.now(tz_info).strftime("%Y-%m-%d %H:%M:%S")
     
-    team_board = f"{team_snip}_board_state"
-    print(team_board)
+    team_board = f"{team_snip.lower()}_board_state"
     update_task_completion_query = f"UPDATE {team_board} SET task_completion = TRUE, completed_by = '{player}', completed_on = '{d}' WHERE task_id = {task};"
     print("PG: Updating Team Board State -> " + update_task_completion_query)
     update_completions_query = f"INSERT INTO completions (team, player, task, date) VALUES ('{team}', '{player}', {task}, '{d}');"
@@ -46,6 +46,7 @@ async def task_complete(team: str, task: int, player: str):
 # tested good
 async def add_submission(task: int, img_url: str, jump_url: str, player: str, team: str, channel_id, message_id):
     connection = await connect_to_db()
+    team = team.replace('\'', '')
     d = datetime.datetime.now(tz_info).strftime("%Y-%m-%d %H:%M:%S")    
     add_submission_query = f"INSERT INTO submissions (task_id, img_url, jump_url, channel_id, message_id, player, team, date_submitted) VALUES ({task}, '{img_url}', '{jump_url}', {channel_id}, {message_id}, '{player}', '{team}', '{d}');"
     print("PG: Adding Submission -> " + add_submission_query)    
@@ -54,7 +55,8 @@ async def add_submission(task: int, img_url: str, jump_url: str, player: str, te
 
 # tested good
 async def remove_submission(task: int, team: str):
-    connection = await connect_to_db()    
+    connection = await connect_to_db()
+    team = team.replace('\'', '')
     remove_submission_query = f"DELETE FROM submissions WHERE task_id = {task} AND team = '{team}';"
     print("PG: Removing Submission -> " + remove_submission_query)    
     await connection.execute(remove_submission_query)    
@@ -90,7 +92,7 @@ async def get_submissions():
 # tested good
 async def increase_completions(connection, team: str, player: str):    
     # is player in table?
-    team_list_query = f"SELECT * FROM {team} WHERE player_name = '{player}';"  
+    team_list_query = f"SELECT * FROM {team} WHERE player_name = '{player}';"
     print("PG: Getting Player -> " + team_list_query)    
     tx = connection.transaction()
     await tx.start()

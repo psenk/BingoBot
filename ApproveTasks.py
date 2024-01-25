@@ -6,13 +6,13 @@ import discord.ui
 import gspread
 from Data import *
 import Queries
-import os
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
 EMBED_ICON_URL = "https://shorturl.at/wGOXY"
 BINGO_LOGS_CHANNEL = 1195530905398284348
 TZ_OFFSET = -6.0
+GOOGLE_SHEETS_KEY = '1lI7jSeyCPXFbA5eCRa8U77ClEQnBMXdud3OiIppH9A8'
 
 tz_info = datetime.timezone(datetime.timedelta(hours=TZ_OFFSET))
 
@@ -73,15 +73,11 @@ class ApproveTasks(discord.ui.View):
         await self.update_buttons(data)
         await self.message.edit(embed=self.create_embed(data, index), view=self)
 
-
-
-
-
     @discord.ui.button(
         label="<", custom_id="prev_button", style=discord.ButtonStyle.blurple
     )
     async def prev_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: Interaction, button: discord.ui.Button
     ):
         self.current_page -= 1
         await interaction.response.defer()
@@ -91,20 +87,21 @@ class ApproveTasks(discord.ui.View):
         label="Approve", custom_id="submit_button", style=discord.ButtonStyle.green
     )
     async def submit_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: Interaction, button: discord.ui.Button
     ):
         await interaction.response.send_message("Approving submission, please do not touch the submission screen until current submission has been approved.", delete_after=5.0)
-
-        await Queries.task_complete(self.team, self.task_id, self.player)
-        await self.update_team_sheet(self.team, self.task_id, self.player, 2)
-        await Queries.remove_submission_by_id(self.submission_id)
-        await self.post_approval_embed()
+        
         try:
             ch = await self.bot.fetch_channel(self.channel_id)
             msg = await ch.fetch_message(self.message_id)
             await msg.add_reaction("✅")
         except:
             print("Foki Bot: Message is not available to react to.")
+            
+        await Queries.task_complete(self.team, self.task_id, self.player)
+        await Queries.remove_submission_by_id(self.submission_id)
+        await self.post_approval_embed()
+
         
         self.data = await Queries.get_submissions()
         self.current_page -= 1
@@ -116,19 +113,12 @@ class ApproveTasks(discord.ui.View):
                 self.submission_id
             )
         )
+        await self.update_team_sheet(self.team, self.task_id, self.player, 2)
 
-    @discord.ui.button(
-        label="Deny", custom_id="deny_button", style=discord.ButtonStyle.red
-    )
-    async def deny_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
+    @discord.ui.button(label="Deny", custom_id="deny_button", style=discord.ButtonStyle.red)
+    async def deny_button(self, interaction: Interaction, button: discord.ui.Button):
         await interaction.response.send_message("Denying submission, please do not touch the submission screen until current submission has been denied.", delete_after=5.0)
 
-        await self.update_team_sheet(self.team, self.task_id, self.player, 3)
-        await Queries.remove_submission_by_id(self.submission_id)
-        await self.post_deny_embed()
-        
         try:
             ch = await self.bot.fetch_channel(self.channel_id)
             msg = await ch.fetch_message(self.message_id)
@@ -136,23 +126,19 @@ class ApproveTasks(discord.ui.View):
         except:
             print("Foki Bot: Message is not available to react to.")
 
+        await Queries.remove_submission_by_id(self.submission_id)
+        await self.post_deny_embed()
+
         self.data = await Queries.get_submissions()
         self.current_page -= 1
         await self.update_message(self.data, self.current_page)
 
         # LOG
-        print(
-            "Foki Bot: Captain, submission ID # {0} has been DENIED.".format(
-                self.submission_id
-            )
-        )
+        print("Foki Bot: Captain, submission ID # {0} has been DENIED.".format(self.submission_id))
+        await self.update_team_sheet(self.team, self.task_id, self.player, 3)
 
-    @discord.ui.button(
-        label=">", custom_id="next_button", style=discord.ButtonStyle.blurple
-    )
-    async def next_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
+    @discord.ui.button(label=">", custom_id="next_button", style=discord.ButtonStyle.blurple)
+    async def next_button(self, interaction: Interaction, button: discord.ui.Button):
         self.current_page += 1
         await interaction.response.defer()
         await self.update_message(self.data, self.current_page)
@@ -169,7 +155,6 @@ class ApproveTasks(discord.ui.View):
     async def update_team_sheet(self, team: str, task: int, player: str, code: int):
         # CODES: 1 = Awaiting Approval, 2 = Complete, 3 = Incomplete
         gc = gspread.service_account(filename="service_account.json")
-        GOOGLE_SHEETS_KEY = os.getenv("GOOGLE_SHEETS_KEY")
 
         d = datetime.datetime.now(tz_info)
         sheet = gc.open_by_key(GOOGLE_SHEETS_KEY)
@@ -177,7 +162,10 @@ class ApproveTasks(discord.ui.View):
         TASK_STATUS_COLUMN = 5
         TASK_DATE_COLUMN = 6
         cell_row = task + 1
-
+        
+        team = team.replace('\'', '')
+        if len(team) > 5:
+            team = team.title()
         # Getting team specific sheet
         team_sheet = sheet.worksheet(team)
 

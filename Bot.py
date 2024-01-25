@@ -1,18 +1,16 @@
-from typing import Tuple
 import discord
 from discord.ext import commands
 import random
 import logging
-import datetime
 import os
 from dotenv import load_dotenv
 load_dotenv(override=True)
-import wom
-from wom import CompetitionStatus
 from Tasks import Tasks
 from ApproveTasks import ApproveTasks
 from Data import *
 import Queries
+from Util import *
+import asyncio
 
 #
 # CONSTANTS
@@ -34,18 +32,7 @@ TEST_WEBHOOK_USER_ID = 1194889597738549298
 BINGO_GENERAL_CHANNEL = 1193039460980502578
 BINGO_LOGS_CHANNEL = 1195530905398284348
 WEBHOOK_USER_ID = 1195911136021852191
-# DISCORD TEAM ROLES (IDS: NAMES)
-GENERAL_BINGO_ROLE = 1196183580615909446
-BINGO_TEAM_ROLES = {
-    1196180292742951003: "The Fat Woodcocks",
-    1196182424913199217: "Seczey\'s Revenge",
-    1196182816099152013: "TFK",
-    1196183381931720796: "The Real World Traders",
-    1196183533308358696: "BBBBB",
-    1196916756384600074: "Phased and Confused",
-    # For testing
-    # 1195556259160666172: "Team Test",
-}
+
 BINGO_TEAM_CHANNELS = {
     "The Fat Woodcocks": 1197945391929368596,
     "Seczey\'s Revenge": 1197945547714207805,
@@ -54,16 +41,12 @@ BINGO_TEAM_CHANNELS = {
     "BBBBB": 1197946114356289587,
     "Phased and Confused": 1197946234384691301,
 }
-CAPTAIN_ROLE = 1195584494636384321
 # foki, me
 ADMIN_RIGHTS = [453652490274078720, 545728431917236226]
-# ADMIN_RIGHTS = [545728431917236226]
 # URLs & MESSAGES
 EMBED_ICON_URL = "https://shorturl.at/wGOXY"
 RULES_POST_URL = "https://discord.com/channels/741153043776667658/1193039460980502578/1193042254751879218"
 RULES_POST_MSG = 1193042254751879218
-# MISC
-TZ_OFFSET = -6.0
 
 #
 # VARIABLES
@@ -77,17 +60,12 @@ wom_client = wom.Client()
 # TEST
 handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
 
-# MISC
-tz_info = datetime.timezone(datetime.timedelta(hours=TZ_OFFSET))
-
 #
 # BOT COMMANDS
 #
 
-# TODO: smack talk bug
 # TODO: memory leak??
 # TODO: IMPORTANT--prevent double submissions
-# TODO: SAVE THE DATA!! reboot from save command?  save data manually command?
 # TODO: "who called what" command logs?
 # TODO: divide code into packaged files
 # TODO: write bot start-up batch script
@@ -95,27 +73,13 @@ tz_info = datetime.timezone(datetime.timedelta(hours=TZ_OFFSET))
 # TODO: add toggleable options
 # TODO: convert all images to discord.File local images
 
-
 # "!bingotest" command
 # For testing purposes
 @bot.command()
 async def test(ctx) -> None:
-    
-    pass
-
+    await ctx.send("http://tinyurl.com/s8aw585y")
 
 # GLOBAL COMMANDS
-
-
-# "!bingorange" command
-# Updates the amount of tasks available
-# start - first task in range
-# end - last task in range
-@bot.command()
-async def range(ctx, start: int, stop: int):
-    await Queries.update_unlocked_tasks(start, stop)
-    return
-
 
 # "!bingowhen" command
 # Ping pong
@@ -123,19 +87,6 @@ async def range(ctx, start: int, stop: int):
 async def when(ctx) -> None:
     await ctx.channel.send("👀")
     return
-
-
-# "!bingoquit" command
-# Closes the bot
-@bot.command()
-async def quit(ctx) -> None:
-    await ctx.send("Powering down.  Later nerds.")
-    await wom_client.close()
-    print("Wise Old Man connection closed.")
-    await bot.close()
-    print("Bot powered down.")
-    return
-
 
 # "!bingoinfo" command
 # Displays information about the bingo event
@@ -183,7 +134,6 @@ async def info(ctx) -> None:
     await ctx.send(embed=bingo_info_embed)
     return
 
-
 # "!bingome" command
 # Displays custom bingo player profile card in an embed
 @bot.command()
@@ -203,7 +153,7 @@ async def me(ctx) -> None:
     title = player_titles_dict.get(random.randint(1, len(player_titles_dict)))
     # Player custom smack_talk/quote
     smack_talk = get_smack_talk(team)
-    gained = await wise_old_man(ctx)
+    gained = await wise_old_man(ctx, wom_client)
     # Custom settings for team captains
     if isCaptain:
         bingo_profile_embed = discord.Embed(
@@ -229,10 +179,8 @@ async def me(ctx) -> None:
     await ctx.send(embed=bingo_profile_embed)
     return
 
-
 # "!bingotasks" command
 # Displays list of ALL tasks
-# TODO: Trim these town to all unlocked tasks
 # done
 @bot.command()
 async def tasks(ctx) -> None:
@@ -242,9 +190,8 @@ async def tasks(ctx) -> None:
     await view.send(ctx)
     return
 
-
 # "!bingomenu" command
-# Displays the bingo menu command
+# Displays the bingo menu
 @bot.command()
 async def menu(ctx) -> None:
     bingo_info_embed = discord.Embed(
@@ -256,36 +203,43 @@ async def menu(ctx) -> None:
         name=bot.user.display_name, icon_url=bot.user.display_avatar
     )
     bingo_info_embed.set_thumbnail(url=EMBED_ICON_URL)
-    bingo_info_embed.add_field(name="!bingomenu", value="This menu.")
+    bingo_info_embed.add_field(name="General Use Commands", value="", inline=False) # title
+    bingo_info_embed.add_field(name="!bingomenu", value="This menu.", inline=True)
     bingo_info_embed.add_field(
-        name="!bingoinfo", value="Information about the bingo event."
+        name="!bingoinfo", value="Information about the bingo event.", inline=True
     )
-    bingo_info_embed.add_field(name="!bingome", value="Your bingo player card.")
-    bingo_info_embed.add_field(name="", value="", inline=False)
-    bingo_info_embed.add_field(name="!bingorules", value="The official bingo rules.")
-    bingo_info_embed.add_field(name="!bingowhen", value="Ping pong.")
+    bingo_info_embed.add_field(name="!bingome", value="Your bingo player card.", inline=True),
+    bingo_info_embed.add_field(name="", value=" ", inline=False) # divider
+    bingo_info_embed.add_field(name="!bingorules", value="The official bingo rules.", inline=True)
+    bingo_info_embed.add_field(name="!bingowhen", value="Ping pong.", inline=True)
     bingo_info_embed.add_field(
         name="!bingotasks",
-        value="DISABLED UNTIL BINGO START\nShows a list of all currently available bingo tasks.",
+        value="Shows a list of all currently available bingo tasks.", inline=True
     )
-    bingo_info_embed.add_field(name="", value="", inline=False)
+    bingo_info_embed.add_field(name="", value=" ", inline=False) # divider
     bingo_info_embed.add_field(
         name="!bingosubmit",
-        value="DISABLED UNTIL BINGO START\nTile Submission Tool, used to submit your tile completion screenshots.",
+        value="DISABLED UNTIL BINGO START\nTile Submission Tool, used to submit your tile completion screenshots.",inline=True
     )
+    bingo_info_embed.add_field(
+        name="!bingostatus",
+        value="UNDER CONSTRUCTION.  Used to display your teams current bingo status.",inline=True
+    )
+    bingo_info_embed.add_field(name="Admin Commands", value="", inline=False) # title
     bingo_info_embed.add_field(
         name="!bingoapprove",
         value="ADMIN USE ONLY.  Approve submissions.",
+        inline=True
     )
     bingo_info_embed.add_field(
         name="!bingorange",
-        value="ADMIN USE ONLY.  Set range of tasks currently available.",
+        value="ADMIN USE ONLY.  Set range of tasks currently available.",inline=True
     )
-    bingo_info_embed.add_field(name="", value="", inline=False)
-    
+    bingo_info_embed.add_field(name="!bingoquit", value="ADMIN USE ONLY.  Turns the bot off.", inline=True)
+    bingo_info_embed.add_field(name="", value="", inline=False) # divider
+
     await ctx.send(embed=bingo_info_embed)
     return
-
 
 # "!bingorules" command
 # Display the bingo rules
@@ -379,20 +333,20 @@ async def rules(ctx):
     await ctx.send(embed=bingo_rules_embed2)
     return
 
-
-# CHANNEL SPECIFIC COMMANDS
-
+# RESTRICTED COMMANDS
 
 # "!bingosubmit int" command
 # Tile Submition Tool
-# Takes attachments from message, sends to Google Doc for verification
+# Takes attachments from message
+# allows approval by bingo admins in Discord
 # int - task number
 # Data about the interaction is used for recognizing submissions
 @bot.command()
-async def DISABLEDsubmit(ctx, task: int) -> None:
+async def submit(ctx, task: int) -> None:
+    if task != 999:
+        await ctx.send("Kya said to do task 999, not " + str(task) + " you cheeky fuck.")
+        return
 
-    # TODO: IMPORTANT---switch before going live
-    # TODO: Check for submission in correct team channel
     # TODO: Is task already completed?
 
     team, isCaptain = await find_bingo_team(ctx.author)
@@ -401,13 +355,16 @@ async def DISABLEDsubmit(ctx, task: int) -> None:
         return
 
     if ctx.channel.id != BINGO_TEAM_CHANNELS.get(team) and ctx.channel.id != TEST_SUBMISSIONS_CHANNEL:
-        await ctx.send("This is not your teams submissions channel!")
-        return
+        if ctx.author.id != ADMIN_RIGHTS:
+            await ctx.send("This is not your teams submissions channel!")
+            return
+        else:
+            await ctx.send("Right away Mr. Foki sir!  o7")
     
     if task > len(task_list) or task <= 0:
         if task != 999: # testing task
             await ctx.send("Task number out of bounds.")
-            return
+            return    
     
     # are there attachments on the message?
     if ctx.message.attachments:
@@ -422,7 +379,7 @@ async def DISABLEDsubmit(ctx, task: int) -> None:
                 return
         
         # is the user SURE they want to post this?
-        toPost = await post(ctx, ctx.message.attachments[0].url, task)
+        toPost = await post(ctx, bot, ctx.message.attachments[0].url, task)
         if not toPost:
             return
         
@@ -434,27 +391,28 @@ async def DISABLEDsubmit(ctx, task: int) -> None:
             )
             
             # Updating database
-            await Queries.add_submission(task,ctx.message.attachments[0].url,ctx.author.display_name,team,ctx.channel.id,ctx.message.id,)
+            await Queries.add_submission(task,ctx.message.attachments[0].url,ctx.message.jump_url,ctx.author.display_name,team,ctx.channel.id,ctx.message.id,)
 
             # snarky options if desired
             # bot_response = random.randint(1, 10)
             # await message.channel.send(submission_responses_dict[bot_response])
 
             # posting logs to #logs channel
-            await submission_alert(ctx, team, multi=True)
+            await submission_alert(ctx, bot, team, task, multi=True)
             # LOG
             print("Foki Bot: Captain, we've received a bingo submission.")
         
         # there is only one image in the submission
         else:
             await ctx.send(
-                "Your submission has been sent to Mr. Foki Ironman, CEO/Founder, Battle Bingo LLC. for review."
+                "Your submission has been sent to Mr. Foki Ironman, CEO/Founder, Battle Bingo Inc. for review."
             )
 
             # Updating database
             await Queries.add_submission(
                 task,
                 ctx.message.attachments[0].url,
+                ctx.message.jump_url,
                 ctx.author.display_name,
                 team,
                 ctx.channel.id,
@@ -466,7 +424,7 @@ async def DISABLEDsubmit(ctx, task: int) -> None:
             # await message.channel.send(submission_responses_dict[bot_response])
 
             # posting logs to #logs channel
-            await submission_alert(ctx, team)
+            await submission_alert(ctx, bot, team, task, multi=False)
             # LOG
             print("Foki Bot: Captain, we've received a bingo submission.")
 
@@ -477,16 +435,13 @@ async def DISABLEDsubmit(ctx, task: int) -> None:
         )
     return
 
-
 """
 Creates embed of all current submissions for admin approval
 """
 
-
 # "!bingoapprove" command
 # For approving submissions
 # ADMIN USE ONLY
-# TODO: add admin specific logic
 @bot.command()
 async def approve(ctx) -> None:
     if ctx.author.id not in ADMIN_RIGHTS:
@@ -508,215 +463,33 @@ async def approve(ctx) -> None:
     await view.send(ctx)
     return
 
+# "!bingorange" command
+# Updates the amount of tasks available
+# start - first task in range
+# end - last task in range
+@bot.command()
+async def range(ctx, start: int, stop: int):
+    
+    if ctx.author.id not in ADMIN_RIGHTS:
+        ctx.send("You are not authorized to use this command.")
+        return
+    await Queries.update_unlocked_tasks(start, stop)
+    return
 
-#
-# HELPER FUNCTIONS
-#
-
-"""
-Posts embed message to specific Discord channel with submission information
-message - Discord message object
-id - Submission UUID
-BINGO_LOGS_CHANNEL - Discord channel to post message to (channel ID)
-"""
-
-
-# done
-async def submission_alert(ctx, team: str, multi: bool = False) -> None:
-    d = datetime.datetime.now(tz_info).strftime("%Y-%m-%d %H:%M:%S")
-    # TODO: IMPORTANT---Switch to proper LOGS channel at launch
-    channel = await bot.fetch_channel(BINGO_LOGS_CHANNEL)
-
-    if (multi):
-        submission_embed = discord.Embed(
-            title=f"Submission Received (multiple images)", url=ctx.message.jump_url, color=0x0000FF
-        )
-    else:
-        submission_embed = discord.Embed(
-            title=f"Submission Received", url=ctx.message.jump_url, color=0x0000FF
-        )
-    submission_embed.set_thumbnail(url=ctx.message.attachments[0].url)
-    submission_embed.add_field(name="Team:", value=team)
-    submission_embed.add_field(name="Player:", value=ctx.author.display_name)
-    submission_embed.add_field(name="", value="")
-    submission_embed.add_field(name="Approved on:", value=d)
-
-    # Posting embed the custom embed
-    await channel.send(embed=submission_embed)
-
-
-"""
-Figure out what bingo team the command caller is on
-user - player
-BINGO_TEAM_ROLES - map of message id - bingo team names (string)
-Cycle through all bingo teams, if user has role, return team name.
-"""
-
-
-# done
-async def find_bingo_team(user) -> Tuple[str, str]:
-    isCaptain = False
-    isBingo = False
-    roles = user.roles
-
-    for i in roles:
-        if i.id == CAPTAIN_ROLE:
-            isCaptain = True
-        elif i.id == GENERAL_BINGO_ROLE:
-            isBingo = True
-
-    for key in BINGO_TEAM_ROLES.keys():
-        for role in roles:
-            if key == role.id:
-                # Returning team/captain?
-                return BINGO_TEAM_ROLES.get(key), isCaptain
-    if isBingo:
-        return "Bingo", None
-
-    return None, None
-
-
-# done
-"""
-Gets smack talk from a dict of hardcoded entries, directed at random team.
-Choose random team, pass team through hardcoded dict, return finalized string.
-TODO: I do not like how this is coded.  Is there a better way?
-"""
-LIST_SIZE = 42
-
-
-# done
-def get_smack_talk(teamIn: str) -> str:
-    global BINGO_TEAM_ROLES
-
-    team = teamIn
-    while team == teamIn:
-        team = random.choice(list(BINGO_TEAM_ROLES.values()))
-
-    player_smack_talk = {
-        1: f"{team} doesn't stand a chance!",
-        2: f"Are you sure {team} is playing the right bingo?  It seems like they took a wrong turn on the way to mediocrity.",
-        3: f"{team}'s strategy is so outdated; it's like playing chess against a team of checkers enthusiasts.",
-        4: f"I'm not sure what {team}'s problem is, but I'd be willing to be that it's something hard to pronounce.",
-        5: f"Brains aren't everything.  And in {team}'s case, they're nothing.",
-        6: f"I wouldn't be surprised if {team} practiced losing instead of winning.",
-        7: f"I'd smack talk {team}, but then I'll have to explain it afterwards, so never mind.",
-        8: f"I thought of {team} today. It reminded me to take out the trash.",
-        9: f"I've seen faster moves in a chess game played by a sloth. Is this your idea of a winning strategy?",
-        10: f"{team} is like playing against an opponent from Wish.com",
-        11: f"I hope {team} has a backup plan, because Plan A clearly isn't working.",
-        12: f"I heard {team}'s strategy is to rely on luck.",
-        13: f"I hope {team} enjoys the view from the bottom.",
-        14: f"I'd wish {team} good luck, but let's be honest - they're going to need more than luck to survive.",
-        15: f"Goals swift as the wind, Defeat echoes in each cheer, Victory is ours.",
-        16: f"There once was a team full of pride, {team}. On Gielinor, they couldn't hide. But the tiles came a-knockin', Their dreams left a-rockin', In defeat, their hopes took a slide.",
-        17: f"Maybe we should donate a few team members to {team} to help them out...",
-        18: f"{team} who?",
-        19: f"I bet {team} eats boneless wings.",
-        20: f"{team} must play RS3.",
-        21: f"Uh ... {team}'s gonna need more people.",
-        22: f"{team} are legit bad.",
-        23: f"I wonder if {team} are actually trying.",
-        24: f"My mom thinks {team} are trying really hard.",
-        25: f"Sit {team}.",
-        26: f"{team} has two brain cells and they are fighting for third place",
-        27: f"{team} are the reason the gene pool needs a lifeguard.",
-        28: f"Maybe {team} should take up checkers.",
-        29: f"Is {team}'s strategy to get as far behind as possible?",
-        30: f"Do I really need to insult {team} more? Just look at them.",
-        31: f"Bless {team}'s heart.",
-        32: f"It's cute how much {team} are trying.",
-        33: f"If a team were the human equivalent of a participation trophy, it would be {team}.",
-        34: f"My days of not taking {team} seriously have come to a continue not taking them seriously.",
-        35: f"They have their entire life to relax, not sure why {team} decided to do it during bingo.",
-        36: f"{team} are a group of goblins.",
-        37: f"Maybe {team} should try something more their speed, like a group ironman.",
-        38: f"{team} can't even count to yellow.",
-        39: f"I really appreciate {team}. They make me feel like we don't have to try as hard.",
-        40: f"The closest {team} comes to a brainstorm is a light drizzle.",
-        41: f"I wonder if Baldy is actually playing for {team}...",
-        42: f"I feel bad. The only thing {team} will get for this performance is a clan credit.",
-    }
-    talk = random.randint(1, len(player_smack_talk))
-    return player_smack_talk.get(talk)
-
-
-"""
-Creates task submission UI for verification
-icon - url of the embed thumbnail
-task - int task number
-Creates embed with task submission info, asks for verification.  Submit returns true, cancel returns false.
-"""
-
-
-# done
-async def post(ctx, url: str, task: int):
-    bingo_submit_embed = discord.Embed(
-        title=f"Verify Task Submission",
-        color=0x00FFDD,
-    )
-    bingo_submit_embed.set_author(
-        name=bot.user.display_name, icon_url=bot.user.display_avatar
-    )
-    bingo_submit_embed.set_thumbnail(url=url)
-    bingo_submit_embed.add_field(name=f"Task #{task}", value=task_list.get(task))
-
-    class SubmitButton(discord.ui.View):
-        submitPost = False
-
-        @discord.ui.button(
-            label="Submit", custom_id="submit", style=discord.ButtonStyle.green
-        )
-        async def submit(self, interaction, button) -> None:
-            self.submitPost = True
-            await interaction.response.defer()
-
-        @discord.ui.button(
-            label="Cancel", custom_id="cancel", style=discord.ButtonStyle.red
-        )
-        async def cancel(self, interaction, button) -> None:
-            await interaction.response.defer()
-
-    view = SubmitButton()
-
-    are_you_sure = await ctx.send(
-        "Are you sure this is the task you want to submit?",
-        embed=bingo_submit_embed,
-        view=view,
-        ephemeral=True,
-    )
-    await bot.wait_for("interaction")
-    await are_you_sure.delete()
-    return view.submitPost
-
-
-"""
-Connects to WOM API and gets competition data.
-Returns player XP gained during competition.
-"""
-
-
-# done
-async def wise_old_man(ctx):
-    wom_client.set_user_agent("@kyanize.")
-
-    # LOG
-    print("Foki Bot: Captain, incoming transmission from Wise Old Man.")
-
-    result = await wom_client.players.get_competition_standings(
-        ctx.author.display_name, CompetitionStatus.Ongoing
-    )
-    if result.is_ok:
-        result = result.to_dict()
-        if len(result.get("value")) == 0:
-            gained = "Not currently available."
-        else:
-            gained = result.get("value")[0].get("progress").get("gained")
-    else:
-        gained = "Not currently available."
-
-    return gained
-
+# "!bingoquit" command
+# Closes the bot
+@bot.command()
+async def quit(ctx) -> None:
+    if ctx.author.id not in ADMIN_RIGHTS:
+        await ctx.send("Nice try, but no robot murder happening today.")
+        return
+    await ctx.send("Powering down. Later nerds.")
+    await wom_client.close()
+    print("Wise Old Man connection closed.")
+    await asyncio.sleep(1.0) # to prevent unclosed connector? in the future
+    await bot.close()
+    print("Bot powered down.")
+    return
 
 #
 # DISCORD API CODE
@@ -726,7 +499,6 @@ async def wise_old_man(ctx):
 Static Discord bot event, triggers whenever bot finishes booting up.
 """
 
-
 @bot.event
 async def on_ready():
     # LOG
@@ -734,13 +506,11 @@ async def on_ready():
     await wom_client.start()
 
     # Custom discord announcement
-    #await bot.get_channel(BINGO_GENERAL_CHANNEL).send("I think Seczey's team has a fair shot though, honestly.")
-
-
+    #await bot.get_channel(1197945391929368596).send("https://cdn.discordapp.com/attachments/1197945883585675354/1199930912134135868/jagras.png?ex=65c455bf&is=65b1e0bf&hm=a672823f5af33e0584fe612a187630b3dfe69fa72c569b4b1e65991cbd454d4a&")
+    
 """
 Static Discord bot event, triggers whenever a message is sent by a user.
 """
-
 
 @bot.event
 async def on_message(message):
@@ -758,64 +528,10 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
-    team, isCaptain = await find_bingo_team(message.author)
-
-    if team == "None":
-        return
-
-    if message.channel.id == BINGO_LOGS_CHANNEL:
-        if message.content == "ping":
-            await message.channel.send("pong")
-            return
-        # Bot responds to commands sent from Google API via Webhook
-
-
-"""
-    if message.channel == client.get_channel(TEST_SUBMISSIONS_CHANNEL):
-        ### bingosubmit command
-        if cmd == "submit":
-            if message.attachments:
-                for attachment in message.attachments:
-                    if attachment.filename.endswith(
-                        (".png", ".jpg", "jpeg", "gif")
-                    ):
-                        num_submissions += 1
-                        id = str(uuid.uuid4())
-
-                        map_of_submissions[id] = message
-
-                        # posting to google sheets
-                        await post_bingo_submission(attachment.url, id)
-
-                        # posting to #posthere channel
-                        await message.channel.send(
-                            "Your submission has been successfully submitted to the Bingo council."
-                        )
-
-                        # snarky options if desired
-                        # bot_response = random.randint(1, 10)
-                        # await message.channel.send(submission_responses_dict[bot_response])
-
-                        # posting logs to #logs channel
-
-                    # wrong file type
-                    else:
-                        await message.channel.send(
-                            "The file type you have submitted is not supported.  Please use .png, .jpg, .jpeg, or .gif."
-                        )
-
-            # no attachment on message
-            else:
-                await message.channel.send(
-                    "There was no attachment on that post. Your submission has been rejected."
-                )
-"""
-
 # Runs the bot
 bot.run(DISCORD_TOKEN, log_handler=handler, log_level=logging.DEBUG)
 
 # FUTURE IDEAS
 
 # - show board command
-# - show teams command
 # - show current board state?
