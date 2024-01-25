@@ -27,8 +27,11 @@ class Tasks(discord.ui.View):
         return False
 
     async def on_timeout(self) -> None:
-        if self.message:
-            await self.message.delete()
+        try:
+            if self.message:
+                await self.message.delete()
+        except:
+            pass
 
     
     async def send(self, ctx):
@@ -51,13 +54,11 @@ class Tasks(discord.ui.View):
         # counts the tasks (for the bullet ordering)
         if start_task == 1:
             count = (self.current_page * self.separator) - 9
-            print("start == 1, so count ==: " + str(count))
+
         else:
-            count = ((self.current_page - 1) * 10) +  start_task
-            print("start != 1, so count ==: " + str(count))        
+            count = ((self.current_page - 1) * 10) +  start_task      
         
         for i in range(0, self.separator):
-            print(count)
             if count > end_task:
                 self.last_page_button.disabled = True
                 self.next_page_button.disabled = True

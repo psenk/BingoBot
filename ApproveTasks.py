@@ -27,14 +27,17 @@ class ApproveTasks(discord.ui.View):
         if interaction.user == self.ctx.author:
             return True
         await interaction.response.send_message(
-            f"The command was initiated by {interaction.user}", ephemeral=True
+            f"The command was initiated by {self.ctx.author}", ephemeral=True
         )
         return False
 
     async def on_timeout(self) -> None:
-        if self.message:
-            await self.message.delete()
-    
+        try:
+            if self.message:
+                await self.message.delete()
+        except:
+            pass
+        
     def create_embed(self, data, index):
         if len(data) == 0:
             embed = discord.Embed(title="There are no submissions available for approval.")
@@ -42,17 +45,18 @@ class ApproveTasks(discord.ui.View):
 
         self.submission_id = self.data[index - 1].get('submission_id')
         self.task_id = self.data[index - 1].get('task_id')
-        self.url = self.data[index - 1].get('img_url')
+        self.img_url = self.data[index - 1].get('img_url')
+        self.jump_url = self.data[index - 1].get('jump_url')
         self.channel_id = self.data[index - 1].get('channel_id')
         self.message_id = self.data[index - 1].get('message_id')
         self.player = self.data[index - 1].get('player')
         self.team = self.data[index - 1].get('team')
         self.date = self.data[index - 1].get('date_submitted')
 
-        embed = discord.Embed(title=f"Submission # {self.submission_id}", url=self.url)
-        embed.set_thumbnail(url=self.url)
+        embed = discord.Embed(title=f"Submission ID Number: {self.submission_id}", url=self.jump_url)
+        embed.set_thumbnail(url=self.img_url)
         embed.add_field(name="Task:", value=task_list.get(self.task_id), inline=False)
-        embed.add_field(name="Submission:", value=f"[HERE]({self.url})", inline=True)
+        embed.add_field(name="Submission:", value=f"[HERE]({self.jump_url})", inline=True)
         embed.add_field(name="Player:", value=f"{self.player}", inline=True)
         embed.add_field(name="", value="", inline=True)
         embed.add_field(name="Team:", value=f"{self.team}", inline=True)
@@ -68,6 +72,9 @@ class ApproveTasks(discord.ui.View):
     async def update_message(self, data, index):
         await self.update_buttons(data)
         await self.message.edit(embed=self.create_embed(data, index), view=self)
+
+
+
 
 
     @discord.ui.button(
@@ -86,21 +93,23 @@ class ApproveTasks(discord.ui.View):
     async def submit_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        warning_msg = await interaction.response.send_message("Approving submission, please do not touch the submission screen until current action is completed.", delete_after=3.0)
+        await interaction.response.send_message("Approving submission, please do not touch the submission screen until current submission has been approved.", delete_after=5.0)
 
         await Queries.task_complete(self.team, self.task_id, self.player)
         await self.update_team_sheet(self.team, self.task_id, self.player, 2)
         await Queries.remove_submission_by_id(self.submission_id)
         await self.post_approval_embed()
+        try:
+            ch = await self.bot.fetch_channel(self.channel_id)
+            msg = await ch.fetch_message(self.message_id)
+            await msg.add_reaction("✅")
+        except:
+            print("Foki Bot: Message is not available to react to.")
         
-        submissions = await Queries.get_submissions()
-        self.current_page = 1
-        await self.update_message(submissions, self.current_page)
+        self.data = await Queries.get_submissions()
+        self.current_page -= 1
+        await self.update_message(self.data, self.current_page)
         
-        ch = await self.bot.fetch_channel(self.channel_id)
-        msg = await ch.fetch_message(self.message_id)
-        await msg.add_reaction("✅")
-
         # LOG
         print(
             "Foki Bot: Captain, submission ID # {0} has been approved.".format(
@@ -114,19 +123,22 @@ class ApproveTasks(discord.ui.View):
     async def deny_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        warning_msg = await interaction.response.send_message("Denying submission, please do not touch the submission screen until current action is completed.", delete_after=3.0)
+        await interaction.response.send_message("Denying submission, please do not touch the submission screen until current submission has been denied.", delete_after=5.0)
 
         await self.update_team_sheet(self.team, self.task_id, self.player, 3)
         await Queries.remove_submission_by_id(self.submission_id)
         await self.post_deny_embed()
+        
+        try:
+            ch = await self.bot.fetch_channel(self.channel_id)
+            msg = await ch.fetch_message(self.message_id)
+            await msg.add_reaction("❌")
+        except:
+            print("Foki Bot: Message is not available to react to.")
 
-        submissions = await Queries.get_submissions()
-        self.current_page = 1
-        await self.update_message(submissions, self.current_page)
-
-        ch = await self.bot.fetch_channel(self.channel_id)
-        msg = await ch.fetch_message(self.message_id)
-        await msg.add_reaction("❌")
+        self.data = await Queries.get_submissions()
+        self.current_page -= 1
+        await self.update_message(self.data, self.current_page)
 
         # LOG
         print(
@@ -134,7 +146,6 @@ class ApproveTasks(discord.ui.View):
                 self.submission_id
             )
         )
-        warning_msg.delete()
 
     @discord.ui.button(
         label=">", custom_id="next_button", style=discord.ButtonStyle.blurple
@@ -167,7 +178,6 @@ class ApproveTasks(discord.ui.View):
         TASK_DATE_COLUMN = 6
         cell_row = task + 1
 
-        print(team)
         # Getting team specific sheet
         team_sheet = sheet.worksheet(team)
 
@@ -219,9 +229,9 @@ class ApproveTasks(discord.ui.View):
         channel = await self.bot.fetch_channel(BINGO_LOGS_CHANNEL)
 
         approval_embed = discord.Embed(
-            title=f"Submission Approved", url=self.url, color=0x00FF00
+            title=f"Submission Approved", url=self.jump_url, color=0x00FF00
         )
-        approval_embed.set_thumbnail(url=self.url)
+        approval_embed.set_thumbnail(url=self.img_url)
         approval_embed.add_field(name="Team:", value=self.team)
         approval_embed.add_field(name="Player:", value=self.player)
         approval_embed.add_field(name="Approved on:", value=self.date)
@@ -232,9 +242,9 @@ class ApproveTasks(discord.ui.View):
         channel = await self.bot.fetch_channel(BINGO_LOGS_CHANNEL)
 
         denial_embed = discord.Embed(
-            title=f"Submission Denied", url=self.url, color=0xFF0000
+            title=f"Submission Denied", url=self.jump_url, color=0xFF0000
         )
-        denial_embed.set_thumbnail(url=self.url)
+        denial_embed.set_thumbnail(url=self.img_url)
         denial_embed.add_field(name="Team:", value=self.team)
         denial_embed.add_field(name="Player:", value=self.player)
         denial_embed.add_field(name="Denied on:", value=self.date)
