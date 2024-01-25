@@ -131,12 +131,38 @@ INSERT INTO tasks VALUES
 (999,999,E'TEST TASK');
 
 CREATE TABLE settings (
-	setting_name VARCHAR(30) NOT NULL,
+	setting_name VARCHAR(50) NOT NULL,
     setting_start INT NOT NULL,
     setting_end INT NOT NULL
 );
 
 INSERT INTO settings VALUES ('days_unlocked', 0, 0);
+
+
+CREATE TABLE completions (
+	item_id SERIAL NOT NULL,
+    team VARCHAR(100) NOT NULL,
+    player VARCHAR(20) NOT NULL,
+    task INT NOT NULL,
+    date TIMESTAMP NOT NULL,
+    PRIMARY KEY (item_id),
+    FOREIGN KEY (task) REFERENCES tasks(task_id)
+);
+
+CREATE TABLE submissions (
+	submission_id SERIAL,
+    task_id INT NOT NULL,
+	img_url VARCHAR(500) NOT NULL,
+    jump_url VARCHAR(500) NOT NULL,
+    channel_id VARCHAR(30) NOT NULL,
+    message_id VARCHAR(30) NOT NULL,
+    player VARCHAR(20) NOT NULL,
+    team VARCHAR(100) NOT NULL,
+    date_submitted TIMESTAMP NOT NULL,
+    PRIMARY KEY (submission_id),
+    FOREIGN KEY (task_id) REFERENCES tasks(task_id)
+);
+
 
 CREATE TABLE the_fat_woodcocks (
 	player_id SERIAL NOT NULL,
@@ -826,29 +852,6 @@ INSERT INTO phased_and_confused_board_state VALUES
 (95, FALSE, '', null),
 (96, FALSE, '', null);
 
-CREATE TABLE completions (
-	item_id SERIAL NOT NULL,
-    team VARCHAR(100) NOT NULL,
-    player VARCHAR(20) NOT NULL,
-    task INT NOT NULL,
-    date TIMESTAMP NOT NULL,
-    PRIMARY KEY (item_id),
-    FOREIGN KEY (task) REFERENCES tasks(task_id)
-);
-
-CREATE TABLE submissions (
-	submission_id SERIAL,
-    task_id INT NOT NULL,
-    img_url VARCHAR(500) NOT NULL,
-    channel_id VARCHAR(30) NOT NULL,
-    message_id VARCHAR(30) NOT NULL,
-    player VARCHAR(20) NOT NULL,
-    team VARCHAR(20) NOT NULL,
-    date_submitted TIMESTAMP NOT NULL,
-    PRIMARY KEY (submission_id),
-    FOREIGN KEY (task_id) REFERENCES tasks(task_id)
-);
-
 --- TESTING
 
 CREATE TABLE team_test (
@@ -978,9 +981,9 @@ CREATE TABLE test_completions (
 CREATE TABLE test_submissions (
 	submission_id SERIAL,
     task_id INT NOT NULL,
-    img_url VARCHAR(400) NOT NULL,
+    img_url VARCHAR(500) NOT NULL,
     player VARCHAR(20) NOT NULL,
-    team VARCHAR(20) NOT NULL,
+    team VARCHAR(100) NOT NULL,
     date_submitted TIMESTAMP NOT NULL,
     PRIMARY KEY (submission_id),
     FOREIGN KEY (task_id) REFERENCES tasks(task_id)
