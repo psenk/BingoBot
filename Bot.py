@@ -79,7 +79,8 @@ handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w"
 # For testing purposes
 @bot.command()
 async def test(ctx) -> None:
-    await ctx.send("http://tinyurl.com/s8aw585y")
+    #await ctx.send("http://tinyurl.com/s8aw585y")
+    pass
 
 
 # GLOBAL COMMANDS
@@ -355,7 +356,6 @@ async def rules(ctx):
     await ctx.send(embed=bingo_rules_embed2)
     return
 
-
 # "!bingohowto" command
 # Displays the "how to submit" message
 @bot.command()
@@ -402,6 +402,19 @@ async def howto(ctx):
     await ctx.send(embed=howto_embed)
     return
 
+# "!bingocredits" command
+# Displays the credits, listing everyone involved in the project
+@bot.command()
+async def credits(ctx):
+    credits_embed = discord.Embed(title=f"Credits",color=0x00FFDD)
+    credits_embed.set_author(name=bot.user.display_name, icon_url=bot.user.display_avatar)
+    credits_embed.set_thumbnail(url=EMBED_ICON_URL)
+    credits_embed.add_field(name="Battle Bingo Created by:",value="The Bingo Snake, Foki",inline=False)
+    credits_embed.add_field(name="Artwork:",value="Foki also",inline=False)
+    credits_embed.add_field(name="Prize Money:",value="All of you guys and your generosity!",inline=False)
+
+    await ctx.send(embed=credits_embed)
+    return
 
 # RESTRICTED COMMANDS
 
@@ -413,11 +426,6 @@ async def howto(ctx):
 # Data about the interaction is used for recognizing submissions
 @bot.command()
 async def submit(ctx, task: int) -> None:
-    if task != 999:
-        await ctx.send(
-            "Bingo hasn't started yet, butthole."
-        )
-        return
 
     # TODO: Is task already completed?
 
@@ -436,10 +444,9 @@ async def submit(ctx, task: int) -> None:
         else:
             await ctx.send("Right away Mr. Foki sir!  o7")
 
-    if task > len(task_list) or task <= 0:
-        if task != 999:  # testing task
-            await ctx.send("Task number out of bounds.")
-            return
+    if task > (len(task_list) + 5) or task <= 0:
+        await ctx.send("Task number out of bounds.")
+        return
 
     # are there attachments on the message?
     if ctx.message.attachments:
@@ -595,7 +602,7 @@ async def on_ready():
     await wom_client.start()
 
     # Custom discord announcement
-    # await bot.get_channel(BINGO_GENERAL_CHANNEL).send("Blepe is a poop.")
+    await bot.get_channel(BINGO_GENERAL_CHANNEL).send("Bingo has officially begun!  Good luck competitors!")
 
 
 """
