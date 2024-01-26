@@ -602,7 +602,7 @@ async def on_ready():
     await wom_client.start()
 
     # Custom discord announcement
-    await bot.get_channel(BINGO_GENERAL_CHANNEL).send("Bingo has officially begun!  Good luck competitors!")
+    #await bot.get_channel(BINGO_GENERAL_CHANNEL).send("Bingo has officially begun!  Good luck competitors!")
 
 
 """
