@@ -55,7 +55,7 @@ class ApproveTasks(discord.ui.View):
 
         embed = discord.Embed(title=f"Submission ID Number: {self.submission_id}", url=self.jump_url)
         embed.set_thumbnail(url=self.img_url)
-        if len(task_list) <= self.task_id <= len(task_list) + 5):
+        if len(task_list) <= self.task_id <= (len(task_list) + 5):
             embed.add_field(name="Task:", value=bonus_tasks.get(self.task_id), inline=False)
         else:
             embed.add_field(name="Task:", value=task_list.get(self.task_id), inline=False)
