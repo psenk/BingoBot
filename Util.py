@@ -54,7 +54,11 @@ async def submission_alert(ctx, bot, team: str, task: int, multi: bool = False) 
     submission_embed.set_thumbnail(url=ctx.message.attachments[0].url)
     submission_embed.add_field(name="Team:", value=team)
     submission_embed.add_field(name="Player:", value=ctx.author.display_name)
-    submission_embed.add_field(name="Tile:", value=task)
+    submission_embed.add_field(name="Task ID:", value=task)
+    if len(task_list) <= task <= len(task_list) + 5:
+        submission_embed.add_field(name="Task:", value=bonus_tasks.get(task))
+    else:
+        submission_embed.add_field(name="Task:", value=task_list.get(task))
     submission_embed.add_field(name="Submitted on:", value=d)
 
     # Posting embed the custom embed and custom view (buttons)
