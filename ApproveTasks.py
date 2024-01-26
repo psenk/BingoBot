@@ -176,7 +176,7 @@ class ApproveTasks(discord.ui.View):
             print(f"SHEETS: Updating task {task} for team {team}")
         elif code == 2:
             current_score = int(team_sheet.cell(4, 10).value)
-            if current_score == None:
+            if current_score is None:
                 current_score = 0
             points = task_points.get(task)
             team_sheet.update_cell(cell_row, TASK_STATUS_COLUMN, "Complete")

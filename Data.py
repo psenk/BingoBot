@@ -91,12 +91,15 @@ task_list = {
 89: "[1 point] Obtain a full set of Chaos Druid robes",
 90: "[1 point] Achieve a Hallowed Sepulchre (all 5 floors) time of 6:20 or better",
 91: "[1 point] Obtain a Clue in a Bottle of every type simultaneously (all five tiers)",
-92: "[1 point] BONUS: Get a skilling pet",
-93: "[1 point] BONUS: Get a boss pet",
-94: "[1 point] BONUS: Get a 99",
-95: "[1 point] BONUS: PK over 100m to someone not in clan, not in deathmatch. Just a good ol fashioned wildy PK.",
-96: "[1 point] BONUS: Get Sasa to say \"I love you\"",
 999: "TEST TASK"
+}
+
+bonus_tasks = {
+    92: "[1 point] BONUS: Get a skilling pet",
+    93: "[1 point] BONUS: Get a boss pet",
+    94: "[1 point] BONUS: Get a 99",
+    95: "[1 point] BONUS: PK over 100m to someone not in clan, not in deathmatch. Just a good ol fashioned wildy PK.",
+    96: "[1 point] BONUS: Get Sasa to say \"I love you\""
 }
 
 # Dict of bingo task point values

@@ -4,6 +4,7 @@ import random
 import logging
 import os
 from dotenv import load_dotenv
+
 load_dotenv(override=True)
 from Tasks import Tasks
 from ApproveTasks import ApproveTasks
@@ -35,7 +36,7 @@ WEBHOOK_USER_ID = 1195911136021852191
 
 BINGO_TEAM_CHANNELS = {
     "The Fat Woodcocks": 1197945391929368596,
-    "Seczey\'s Revenge": 1197945547714207805,
+    "Seczey's Revenge": 1197945547714207805,
     "TFK": 1197945883585675354,
     "The Real World Traders": 1197946038179352696,
     "BBBBB": 1197946114356289587,
@@ -73,13 +74,16 @@ handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w"
 # TODO: add toggleable options
 # TODO: convert all images to discord.File local images
 
+
 # "!bingotest" command
 # For testing purposes
 @bot.command()
 async def test(ctx) -> None:
     await ctx.send("http://tinyurl.com/s8aw585y")
 
+
 # GLOBAL COMMANDS
+
 
 # "!bingowhen" command
 # Ping pong
@@ -87,6 +91,7 @@ async def test(ctx) -> None:
 async def when(ctx) -> None:
     await ctx.channel.send("👀")
     return
+
 
 # "!bingoinfo" command
 # Displays information about the bingo event
@@ -123,7 +128,7 @@ async def info(ctx) -> None:
     bingo_info_embed.add_field(name="", value="Watch for a Discord ping!", inline=False)
     bingo_info_embed.add_field(name="", value="", inline=False)
     bingo_info_embed.add_field(name="The Fat Woodcocks", value="Captain: Hokumpoke")
-    bingo_info_embed.add_field(name="Seczey\'s Revenge", value="Captain: Seczey")
+    bingo_info_embed.add_field(name="Seczey's Revenge", value="Captain: Seczey")
     bingo_info_embed.add_field(name="TFK", value="Captain: Kyanize")
     bingo_info_embed.add_field(
         name="The Real World Traders", value="Captain: ItsOnlyPrime"
@@ -133,6 +138,7 @@ async def info(ctx) -> None:
 
     await ctx.send(embed=bingo_info_embed)
     return
+
 
 # "!bingome" command
 # Displays custom bingo player profile card in an embed
@@ -179,6 +185,7 @@ async def me(ctx) -> None:
     await ctx.send(embed=bingo_profile_embed)
     return
 
+
 # "!bingotasks" command
 # Displays list of ALL tasks
 # done
@@ -203,40 +210,55 @@ async def menu(ctx) -> None:
         name=bot.user.display_name, icon_url=bot.user.display_avatar
     )
     bingo_info_embed.set_thumbnail(url=EMBED_ICON_URL)
-    bingo_info_embed.add_field(name="General Use Commands", value="", inline=False) # title
+    bingo_info_embed.add_field(
+        name="General Use Commands", value="", inline=False
+    )  # title
     bingo_info_embed.add_field(name="!bingomenu", value="This menu.", inline=True)
     bingo_info_embed.add_field(
         name="!bingoinfo", value="Information about the bingo event.", inline=True
     )
-    bingo_info_embed.add_field(name="!bingome", value="Your bingo player card.", inline=True),
-    bingo_info_embed.add_field(name="", value=" ", inline=False) # divider
-    bingo_info_embed.add_field(name="!bingorules", value="The official bingo rules.", inline=True)
+    bingo_info_embed.add_field(
+        name="!bingome", value="Your bingo player card.", inline=True
+    ),
+    bingo_info_embed.add_field(name="", value=" ", inline=False)  # divider
+    bingo_info_embed.add_field(
+        name="!bingorules", value="The official bingo rules.", inline=True
+    )
     bingo_info_embed.add_field(name="!bingowhen", value="Ping pong.", inline=True)
     bingo_info_embed.add_field(
         name="!bingotasks",
-        value="Shows a list of all currently available bingo tasks.", inline=True
+        value="Shows a list of all currently available bingo tasks.",
+        inline=True,
     )
-    bingo_info_embed.add_field(name="", value=" ", inline=False) # divider
+    bingo_info_embed.add_field(name="", value=" ", inline=False)  # divider
     bingo_info_embed.add_field(
-        name="!bingosubmit",
-        value="DISABLED UNTIL BINGO START\nTile Submission Tool, used to submit your tile completion screenshots.",inline=True
+        name="!bingosubmit X",
+        value="Tile Submission Tool, used to submit your tile completion screenshots.  X = Task #",
+        inline=True,
+    )
+    bingo_info_embed.add_field(
+        name="!bingohowto",
+        value="Instructions on how to post a bingo submission with the bot.",
+        inline=True,
     )
     bingo_info_embed.add_field(
         name="!bingostatus",
-        value="UNDER CONSTRUCTION.  Used to display your teams current bingo status.",inline=True
+        value="UNDER CONSTRUCTION.  Used to display your teams current bingo status.",
+        inline=True,
     )
-    bingo_info_embed.add_field(name="Admin Commands", value="", inline=False) # title
+    bingo_info_embed.add_field(name="Admin Commands", value="", inline=False)  # title
     bingo_info_embed.add_field(
-        name="!bingoapprove",
-        value="ADMIN USE ONLY.  Approve submissions.",
-        inline=True
+        name="!bingoapprove", value="ADMIN USE ONLY.  Approve submissions.", inline=True
     )
     bingo_info_embed.add_field(
-        name="!bingorange",
-        value="ADMIN USE ONLY.  Set range of tasks currently available.",inline=True
+        name="!bingorange X Y",
+        value="ADMIN USE ONLY.  Set range of tasks currently available.  X = start of range, Y = end of range",
+        inline=True,
     )
-    bingo_info_embed.add_field(name="!bingoquit", value="ADMIN USE ONLY.  Turns the bot off.", inline=True)
-    bingo_info_embed.add_field(name="", value="", inline=False) # divider
+    bingo_info_embed.add_field(
+        name="!bingoquit", value="ADMIN USE ONLY.  Turns the bot off.", inline=True
+    )
+    bingo_info_embed.add_field(name="", value="", inline=False)  # divider
 
     await ctx.send(embed=bingo_info_embed)
     return
@@ -333,6 +355,54 @@ async def rules(ctx):
     await ctx.send(embed=bingo_rules_embed2)
     return
 
+
+# "!bingohowto" command
+# Displays the "how to submit" message
+@bot.command()
+async def howto(ctx):
+    howto_embed = discord.Embed(
+        title=f"How to Submit",
+        color=0x00FFDD,
+        description="Follow these instructions to post a bingo submission.",
+    )
+    howto_embed.set_author(name=bot.user.display_name, icon_url=bot.user.display_avatar)
+    howto_embed.set_thumbnail(url=EMBED_ICON_URL)
+    howto_embed.add_field(
+        name="Step One",
+        value="Type `!bingotasks` and find the Task # of the tile you want to submit.",
+        inline=False,
+    )
+    howto_embed.add_field(
+        name="Step Two",
+        value="Type `!bingosubmit X` where `X` is the Task # you just located.",
+        inline=False,
+    )
+    howto_embed.add_field(
+        name="Step Three",
+        value="Attach your screenshot(s) to the message and post.",
+        inline=False,
+    )
+    howto_embed.add_field(
+        name="Step Four",
+        value="Click either 'Submit' or 'Cancel' on the confirmation window that appears.",
+        inline=False,
+    )
+    howto_embed.add_field(
+        name="Step Five",
+        value="Your submission will receive a ✅ or ❌ when it is approved or denied, respectively.",
+        inline=False,
+    )
+    howto_embed.add_field(
+        name="Instructions with Pictures",
+        value="[HERE](https://cdn.discordapp.com/attachments/1195577008973946890/1200208657477025813/instructions.png?ex=65c5586a&is=65b2e36a&hm=1859e3a5335352d7d44450b8ac7f1f8a97a592f2a8e64633ed28f8705c6d7374&)",
+        inline=False,
+    )
+    
+
+    await ctx.send(embed=howto_embed)
+    return
+
+
 # RESTRICTED COMMANDS
 
 # "!bingosubmit int" command
@@ -344,7 +414,9 @@ async def rules(ctx):
 @bot.command()
 async def submit(ctx, task: int) -> None:
     if task != 999:
-        await ctx.send("Kya said to do task 999, not " + str(task) + " you cheeky fuck.")
+        await ctx.send(
+            "Bingo hasn't started yet, butthole."
+        )
         return
 
     # TODO: Is task already completed?
@@ -354,18 +426,21 @@ async def submit(ctx, task: int) -> None:
         await ctx.send("I'm sorry, but you do not have access to this command.")
         return
 
-    if ctx.channel.id != BINGO_TEAM_CHANNELS.get(team) and ctx.channel.id != TEST_SUBMISSIONS_CHANNEL:
+    if (
+        ctx.channel.id != BINGO_TEAM_CHANNELS.get(team)
+        and ctx.channel.id != TEST_SUBMISSIONS_CHANNEL
+    ):
         if ctx.author.id != ADMIN_RIGHTS:
             await ctx.send("This is not your teams submissions channel!")
             return
         else:
             await ctx.send("Right away Mr. Foki sir!  o7")
-    
+
     if task > len(task_list) or task <= 0:
-        if task != 999: # testing task
+        if task != 999:  # testing task
             await ctx.send("Task number out of bounds.")
-            return    
-    
+            return
+
     # are there attachments on the message?
     if ctx.message.attachments:
         # are the attachments the right file types?
@@ -375,23 +450,32 @@ async def submit(ctx, task: int) -> None:
             if name.endswith((".png", ".jpg", ".jpeg", ".gif")):
                 continue
             else:
-                await ctx.send("One of the files you have submitted has an unsupported file type.  Please use .png, .jpg, .jpeg, or .gif.")
+                await ctx.send(
+                    "One of the files you have submitted has an unsupported file type.  Please use .png, .jpg, .jpeg, or .gif."
+                )
                 return
-        
+
         # is the user SURE they want to post this?
         toPost = await post(ctx, bot, ctx.message.attachments[0].url, task)
         if not toPost:
             return
-        
+
         # are there multiple images on the submission?
         if len(ctx.message.attachments) > 1:
-            
             await ctx.send(
                 "Your submission has been sent to Mr. Foki Ironman, CEO/Founder, Battle Bingo LLC. for review."
             )
-            
+
             # Updating database
-            await Queries.add_submission(task,ctx.message.attachments[0].url,ctx.message.jump_url,ctx.author.display_name,team,ctx.channel.id,ctx.message.id,)
+            await Queries.add_submission(
+                task,
+                ctx.message.attachments[0].url,
+                ctx.message.jump_url,
+                ctx.author.display_name,
+                team,
+                ctx.channel.id,
+                ctx.message.id,
+            )
 
             # snarky options if desired
             # bot_response = random.randint(1, 10)
@@ -401,7 +485,7 @@ async def submit(ctx, task: int) -> None:
             await submission_alert(ctx, bot, team, task, multi=True)
             # LOG
             print("Foki Bot: Captain, we've received a bingo submission.")
-        
+
         # there is only one image in the submission
         else:
             await ctx.send(
@@ -435,9 +519,11 @@ async def submit(ctx, task: int) -> None:
         )
     return
 
+
 """
 Creates embed of all current submissions for admin approval
 """
+
 
 # "!bingoapprove" command
 # For approving submissions
@@ -463,18 +549,19 @@ async def approve(ctx) -> None:
     await view.send(ctx)
     return
 
+
 # "!bingorange" command
 # Updates the amount of tasks available
 # start - first task in range
 # end - last task in range
 @bot.command()
 async def range(ctx, start: int, stop: int):
-    
     if ctx.author.id not in ADMIN_RIGHTS:
-        ctx.send("You are not authorized to use this command.")
+        await ctx.send("You are not authorized to use this command.")
         return
     await Queries.update_unlocked_tasks(start, stop)
     return
+
 
 # "!bingoquit" command
 # Closes the bot
@@ -486,10 +573,11 @@ async def quit(ctx) -> None:
     await ctx.send("Powering down. Later nerds.")
     await wom_client.close()
     print("Wise Old Man connection closed.")
-    await asyncio.sleep(1.0) # to prevent unclosed connector? in the future
+    await asyncio.sleep(1.0)  # to prevent unclosed connector? in the future
     await bot.close()
     print("Bot powered down.")
     return
+
 
 #
 # DISCORD API CODE
@@ -499,6 +587,7 @@ async def quit(ctx) -> None:
 Static Discord bot event, triggers whenever bot finishes booting up.
 """
 
+
 @bot.event
 async def on_ready():
     # LOG
@@ -506,27 +595,30 @@ async def on_ready():
     await wom_client.start()
 
     # Custom discord announcement
-    #await bot.get_channel(1197945391929368596).send("https://cdn.discordapp.com/attachments/1197945883585675354/1199930912134135868/jagras.png?ex=65c455bf&is=65b1e0bf&hm=a672823f5af33e0584fe612a187630b3dfe69fa72c569b4b1e65991cbd454d4a&")
-    
+    # await bot.get_channel(BINGO_GENERAL_CHANNEL).send("Blepe is a poop.")
+
+
 """
 Static Discord bot event, triggers whenever a message is sent by a user.
 """
+
 
 @bot.event
 async def on_message(message):
     # TODO: if message NOT IN these channels:
     await bot.process_commands(message)
-    
+
     # TFK BABY LFG
-    #emoji = "<:tfk2:1199460856182878240>"
-    #await message.add_reaction(emoji)
-    
+    # emoji = "<:tfk2:1199460856182878240>"
+    # await message.add_reaction(emoji)
+
     if message.author.id == 483092611419078659:
         await message.add_reaction("🖕")
 
     # Tells bot to ignore its own messages
     if message.author == bot.user:
         return
+
 
 # Runs the bot
 bot.run(DISCORD_TOKEN, log_handler=handler, log_level=logging.DEBUG)

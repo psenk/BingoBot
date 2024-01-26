@@ -36,6 +36,7 @@ class Tasks(discord.ui.View):
     async def send(self, ctx):
         self.message = await ctx.send(view = self)
         await self.update_message(self.data)
+        await ctx.send(embed=await self.add_bonus_tasks(), delete_after=60.0)
     
     # TODO: move the logic from here to the button press
     
@@ -43,13 +44,14 @@ class Tasks(discord.ui.View):
         start_task, end_task = await Queries.get_unlocked_tasks()
         
         if start_task == 0 or end_task == 0:
-            embed = discord.Embed(title="There are no tasks available at this time.")
+            embed = discord.Embed(title="There are no tasks available at this time.", color=0x0000FF)
             self.first_page_button.disabled = True
             self.prev_page_button.disabled = True
             self.last_page_button.disabled = True
             self.next_page_button.disabled = True
             return embed
-        embed = discord.Embed(title="Battle Bingo Task List")
+        
+        embed = discord.Embed(title="Battle Bingo Task List", color=0x0000FF)
         # counts the tasks (for the bullet ordering)
         if start_task == 1:
             count = (self.current_page * self.separator) - 9
@@ -65,10 +67,9 @@ class Tasks(discord.ui.View):
             if start_task <= count <= end_task:
                 embed.add_field(name=f"Task #{count}", value=task_list.get(count), inline=False)
                 count += 1
-                
+        
         return embed
        
-
     async def update_message(self, data):
         self.update_buttons()
         await self.message.edit(embed=await self.create_embed(data), view=self)
@@ -118,3 +119,9 @@ class Tasks(discord.ui.View):
         until_item = self.current_page * self.separator
         from_item = until_item - self.separator
         await self.update_message(self.data[from_item:])
+        
+    async def add_bonus_tasks(self):
+        embed = discord.Embed(title="BONUS Tasks", color=0x0000FF)
+        for i in range(len(bonus_tasks)):
+            embed.add_field(name=f"BONUS Task # {92 + i}", value=bonus_tasks.get(92 + i), inline=False)
+        return embed

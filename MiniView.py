@@ -60,13 +60,14 @@ class MiniView(discord.ui.View):
     async def update_team_sheet(self, team: str, task: int, player: str, code: int):
         # CODES: 1 = Awaiting Approval, 2 = Complete, 3 = Incomplete
         gc = gspread.service_account(filename="service_account.json")
-        self.channel.send("service account made")
+
         d = datetime.datetime.now(tz_info)
         sheet = gc.open_by_key(GOOGLE_SHEETS_KEY)
 
         TASK_STATUS_COLUMN = 5
         TASK_DATE_COLUMN = 6
         cell_row = task + 1
+        
         team = team.replace('\'', '')
         if len(team) > 5:
             team = team.title()
@@ -80,7 +81,7 @@ class MiniView(discord.ui.View):
             print(f"SHEETS: Updating task {task} for team {team}")
         elif code == 2:
             current_score = int(team_sheet.cell(4, 10).value)
-            if current_score == None:
+            if current_score is None:
                 current_score = 0
             points = task_points.get(task)
             team_sheet.update_cell(cell_row, TASK_STATUS_COLUMN, "Complete")

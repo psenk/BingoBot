@@ -145,7 +145,7 @@ async def get_unlocked_tasks():
         end = return_list[0].get('setting_end')
     except:
         await tx.rollback()
-        print("EXCEPTION: get_submissions")
+        print("EXCEPTION: get_unlocked_tasks")
         return
     else:
         await tx.commit()        
