@@ -114,7 +114,7 @@ def get_smack_talk(teamIn: str) -> str:
         1: f"{team} doesn't stand a chance!",
         2: f"Are you sure {team} is playing the right bingo?  It seems like they took a wrong turn on the way to mediocrity.",
         3: f"{team}'s strategy is so outdated; it's like playing chess against a team of checkers enthusiasts.",
-        4: f"I'm not sure what {team}'s problem is, but I'd be willing to be that it's something hard to pronounce.",
+        4: f"I'm not sure what {team}'s problem is, but I'd be willing to bet that it's something hard to pronounce.",
         5: f"Brains aren't everything.  And in {team}'s case, they're nothing.",
         6: f"I wouldn't be surprised if {team} practiced losing instead of winning.",
         7: f"I'd smack talk {team}, but then I'll have to explain it afterwards, so never mind.",
