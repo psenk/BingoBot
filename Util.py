@@ -175,9 +175,9 @@ async def post(ctx, bot, url: str, task: int):
     )
     bingo_submit_embed.set_thumbnail(url=url)
     if len(task_list) <= task <= (len(task_list) + 5):
-            bingo_submit_embed.add_field(name="Task # ", value=bonus_tasks.get(task), inline=False)
+            bingo_submit_embed.add_field(name=f"Task # {task}", value=bonus_tasks.get(task), inline=False)
     else:
-        bingo_submit_embed.add_field(name="Task # ", value=task_list.get(task), inline=False)
+        bingo_submit_embed.add_field(name=f"Task # {task}", value=task_list.get(task), inline=False)
 
     class SubmitButton(discord.ui.View):
         submitPost = False

@@ -105,6 +105,11 @@ class MiniView(discord.ui.View):
         approval_embed.set_thumbnail(url=self.msg.attachments[0].url)
         approval_embed.add_field(name="Team:", value=self.team)
         approval_embed.add_field(name="Player:", value=self.user.display_name)
+        approval_embed.add_field(name="Task #:", value=self.task_id)
+        if len(task_list) <= self.task_id <= (len(task_list) + 5):
+            approval_embed.add_field(name="Task:", value=bonus_tasks.get(self.task_id))
+        else:
+            approval_embed.add_field(name="Task:", value=task_list.get(self.task_id)) 
         approval_embed.add_field(name="Approved on:", value=self.date, inline=False)
 
         await self.channel.send(embed=approval_embed)
@@ -117,6 +122,11 @@ class MiniView(discord.ui.View):
         denial_embed.set_thumbnail(url=self.msg.attachments[0].url)
         denial_embed.add_field(name="Team:", value=self.team)
         denial_embed.add_field(name="Player:", value=self.user.display_name)
+        denial_embed.add_field(name="Task #:", value=self.task_id)
+        if len(task_list) <= self.task_id <= (len(task_list) + 5):
+            denial_embed.add_field(name="Task:", value=bonus_tasks.get(self.task_id))
+        else:
+            denial_embed.add_field(name="Task:", value=self.task_list.get(self.task_id)) 
         denial_embed.add_field(name="Denied on:", value=self.date, inline=False)
 
         await self.channel.send(embed=denial_embed)

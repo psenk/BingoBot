@@ -225,6 +225,11 @@ class ApproveTasks(discord.ui.View):
         approval_embed.set_thumbnail(url=self.img_url)
         approval_embed.add_field(name="Team:", value=self.team)
         approval_embed.add_field(name="Player:", value=self.player)
+        approval_embed.add_field(name="Task #:", value=self.task_id)
+        if len(task_list) <= self.task_id <= (len(task_list) + 5):
+            approval_embed.add_field(name="Task:", value=bonus_tasks.get(self.task_id))
+        else:
+            approval_embed.add_field(name="Task:", value=self.task_list.get(self.task_id))        
         approval_embed.add_field(name="Approved on:", value=self.date)
 
         await channel.send(embed=approval_embed)
@@ -238,6 +243,11 @@ class ApproveTasks(discord.ui.View):
         denial_embed.set_thumbnail(url=self.img_url)
         denial_embed.add_field(name="Team:", value=self.team)
         denial_embed.add_field(name="Player:", value=self.player)
+        denial_embed.add_field(name="Task #:", value=self.task_id)
+        if len(task_list) <= self.task_id <= (len(task_list) + 5):
+            denial_embed.add_field(name="Task:", value=bonus_tasks.get(self.task_id))
+        else:
+            denial_embed.add_field(name="Task:", value=task_list.get(self.task_id)) 
         denial_embed.add_field(name="Denied on:", value=self.date)
 
         await channel.send(embed=denial_embed)
