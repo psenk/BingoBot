@@ -78,9 +78,9 @@ handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w"
 # "!bingotest" command
 # For testing purposes
 @bot.command()
-async def test(ctx) -> None:
-    #await ctx.send("http://tinyurl.com/s8aw585y")
-    pass
+async def butt(ctx) -> None:
+    await ctx.send("http://tinyurl.com/s8aw585y")
+    return
 
 
 # GLOBAL COMMANDS
@@ -454,11 +454,11 @@ async def submit(ctx, task: int) -> None:
         for attachment in ctx.message.attachments:
             name = attachment.filename.lower()
             # parameter needs to be a tuple
-            if name.endswith((".png", ".jpg", ".jpeg", ".gif")):
+            if name.endswith((".png", ".jpg", ".jpeg", ".gif", ".mp4")):
                 continue
             else:
                 await ctx.send(
-                    "One of the files you have submitted has an unsupported file type.  Please use .png, .jpg, .jpeg, or .gif."
+                    "One of the files you have submitted has an unsupported file type.  Please use .png, .jpg, .jpeg, .gif, or .mp4."
                 )
                 return
 
