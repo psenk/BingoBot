@@ -15,7 +15,7 @@ tz_info = datetime.timezone(datetime.timedelta(hours=TZ_OFFSET))
 
 # tested good
 async def connect_to_db():    
-    connection = await asyncpg.connect("postgres://bingo_bot:gUw29uN8TgRDUOR@bb-database.internal:5432/bingo_bot")
+    connection = await asyncpg.connect("postgres://***USERNAME***:***PASSWORD***@***FLY DATABASE***.internal:5432/bingo_bot")
     #connection = await asyncpg.connect("postgres://postgres:root@localhost:5432/battle_bingo")
     print("PG: Connected to bingo database.")
     return connection
